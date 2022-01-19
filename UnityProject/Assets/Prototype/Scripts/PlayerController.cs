@@ -1,102 +1,103 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    // Settings
-    float speed = 15;
-    float jumpSpeed = 25;
-    float gravityScale = 8;
-    float airControl = 3;
-    float groundControl = 10;
-    float maxSpeed = 40;
-    float hitRadius = 0.6f;
-    float groundCheckOffset = 0.1f;
-    LayerMask collisionMask = 1;
+    const bool hideCursor = true;
+    const float speed = 10;
+    const float jumpSpeed = 25;
+    const float gravityScale = 8;
+    const float airControl = 3;
+    const float groundControl = 10;
+    const float maxSpeed = 40;
 
-    // Vars
-    bool bInputJump = true;
-    float velocityX;
+    float h, velocityX, lerp;
+    Vector2 velocity;
+    RaycastHit2D groundHit;
     Rigidbody2D rb;
+    PhysicsMaterial2D mat;
+    LayerMask mask = 1;
     SpriteRenderer spriteRenderer;
-    new Transform transform;
+    WaitForFixedUpdate waitForFixed;
+
+    Animator anim;
 
     void Awake()
     {
-        transform = GetComponent<Transform>();
+        Time.fixedDeltaTime = 1 / 100f;
         rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        Cursor.visible = false;
         rb.gravityScale = gravityScale;
-        Time.fixedDeltaTime = 1 / 125; // Set physics tick rate
-        var pm = new PhysicsMaterial2D();
-        pm.friction = 0;
-        rb.sharedMaterial = pm;
+        mat = new PhysicsMaterial2D();
+        mat.friction = 0;
+        rb.sharedMaterial = mat;
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        Cursor.visible = !hideCursor;
     }
 
-
-    void FixedUpdate()
+    void Update()
     {
-        // Ground check
-        RaycastHit2D groundHit = Physics2D.CircleCast(rb.position - Vector2.up * groundCheckOffset, hitRadius, Vector2.zero, 0, collisionMask.value);
+        // input
+        h = Input.GetAxisRaw("Horizontal");
 
-        // Input
-        var horizontalInput = 0f;
-        if (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed) { horizontalInput = -1; }
-        if (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed) { horizontalInput = 1; }
-
-        if (Keyboard.current.spaceKey.isPressed)
+        if (Input.GetButtonDown("Jump"))
         {
-            if (bInputJump && groundHit)
+            if (groundHit)
             {
                 rb.velocity += Vector2.up * jumpSpeed;
             }
-            bInputJump = false;
         }
-        else
+
+        // flip sprite
+        if (Mathf.Abs(h) > 0.01f)
         {
-            bInputJump = true;
+            spriteRenderer.flipX = h < 0f;
         }
 
-        // Sprite flip
-        if (Mathf.Abs(horizontalInput) > 0.01f)
-        {
-            spriteRenderer.flipX = horizontalInput < 0f;
-        }
-
-        // Velocity
-        float lerp = groundHit ? groundControl : airControl;
-        velocityX = Mathf.Lerp(velocityX, horizontalInput, Time.fixedDeltaTime * lerp);
-        rb.velocity = new Vector2(velocityX * speed, rb.velocity.y); ;
-
-        // Speed limit
-        rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
-
-        // Reset level if player falls in to "deathbox"
+        // reset
         if (transform.position.y < -50)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
+    }
 
+    void FixedUpdate()
+    {
+        groundHit = Physics2D.CircleCast(rb.position, 0.6f, Vector2.zero, 0, mask.value);
 
-        // Experimetnal strafe
-        //// velocity += acceleration - friction*velocity // Stokes friction model
-        //v = motionVector;// Vector3.Lerp(v, motionVector, velocityLerp * fixedDeltaTime);
-        //var velocity = v - 0.6f * _rigidbody.velocity;
-        //velocity += _rigidbody.velocity * (deltaY * 3); // strafe
-        //velocity.y = 0;
-        //_rigidbody.velocity += velocity;
+        lerp = airControl; // air control
+        if (groundHit) // grounded
+        {
+            lerp = groundControl;
+        }
+
+        // reduce horizontal input value if pushing object or against a wall
+        if (Physics2D.CircleCast(rb.position + Vector2.right * h * 0.5f, 0.25f, Vector2.zero, 0, mask.value))
+        {
+            h *= 0.2f;
+        }
+
+        velocityX = Mathf.Lerp(velocityX, h, Time.fixedDeltaTime * lerp);
+        velocity.Set(velocityX * speed, rb.velocity.y);
+        rb.velocity = velocity;
+        rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
+
+        //if (groundHit)
+        //{
+        //    Rigidbody2D r = groundHit.collider.GetComponentInParent<Rigidbody2D>();
+        //    if (r != null) { rb.AddForceAtPosition(r.velocity * 0.5f, groundHit.point, ForceMode2D.Force); } // stick to stuffs
+        //}
     }
 
     void OnDrawGizmos()
     {
-        transform = GetComponent<Transform>();
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position - Vector3.up * groundCheckOffset, hitRadius);
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, 0.6f);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position + Vector3.right * h * 0.5f, 0.25f);
 
         Gizmos.color = new Color(1, 0, 0, 0.5f);
-        Gizmos.DrawCube(new Vector3(0, -150, 0), new Vector3(5000, 200, 0));
+        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
     }
 }
