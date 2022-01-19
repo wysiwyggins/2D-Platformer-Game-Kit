@@ -80,6 +80,14 @@ public class PlayerController : MonoBehaviour
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
+
+        // Experimetnal strafe
+        //// velocity += acceleration - friction*velocity // Stokes friction model
+        //v = motionVector;// Vector3.Lerp(v, motionVector, velocityLerp * fixedDeltaTime);
+        //var velocity = v - 0.6f * _rigidbody.velocity;
+        //velocity += _rigidbody.velocity * (deltaY * 3); // strafe
+        //velocity.y = 0;
+        //_rigidbody.velocity += velocity;
     }
 
     void OnDrawGizmos()
