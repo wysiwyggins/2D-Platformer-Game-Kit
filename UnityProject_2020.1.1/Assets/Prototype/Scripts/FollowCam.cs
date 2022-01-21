@@ -8,14 +8,14 @@ public class FollowCam : MonoBehaviour
 
     float lerp;
     Vector3 offset;
-    new Camera camera;
+    Camera cam;
     float origSize, targetSize;
 
     void Start()
     {
         offset = transform.position - target.position;
-        camera = GetComponent<Camera>();
-        origSize = camera.orthographicSize;
+        cam = GetComponent<Camera>();
+        origSize = cam.orthographicSize;
         targetSize = origSize;
     }
 
@@ -34,7 +34,7 @@ public class FollowCam : MonoBehaviour
         targetPosition.z = transform.position.z;
         transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * lerp);
 
-        camera.orthographicSize = Mathf.Lerp(camera.orthographicSize, targetSize, Time.deltaTime * 5);
+        cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetSize, Time.deltaTime * 5);
     }
 
     public void ZoomIn()
@@ -51,4 +51,6 @@ public class FollowCam : MonoBehaviour
     {
         targetSize = origSize;
     }
+
+
 }
