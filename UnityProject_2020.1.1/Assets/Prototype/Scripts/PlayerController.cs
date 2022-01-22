@@ -72,12 +72,6 @@ public class PlayerController : MonoBehaviour
         // Grab horizontal input here, to sync with physics loop
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
-        // Assume no input
-        var control = 0f;
-
-        // Ground check
-        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.2f, 0.4f, Vector2.zero, 0, groundMask.value);
-
         // Wall/obstacle check
         walled = Physics2D.CircleCast(rb.position + new Vector2(horizontalInput * 0.4f, 0), 0.3f, Vector2.zero, 0, groundMask.value);
 
@@ -99,15 +93,14 @@ public class PlayerController : MonoBehaviour
             hitToggle = true;
         }
 
-        // Air control
-        if (Mathf.Abs(horizontalInput) > 0.1f)
-        {
-            control = airControl;
-        }
+        // Ground check
+        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.2f, 0.4f, Vector2.zero, 0, groundMask.value);
 
+        // Control and grounding
+        var control = airControl;
         if (grounded)
         {
-            control = groundControl; // Ground control
+            control = groundControl;
 
             // Play landing sound
             var y = Mathf.Abs(velocity.y);
@@ -142,15 +135,12 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.2f, 0.4f);
+    //void OnDrawGizmos()
+    //{
+    //    Gizmos.color = Color.green;
+    //    Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.2f, 0.4f);
 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
-
-        Gizmos.color = new Color(1, 0, 0, 0.5f);
-        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
-    }
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
+    //}
 }
