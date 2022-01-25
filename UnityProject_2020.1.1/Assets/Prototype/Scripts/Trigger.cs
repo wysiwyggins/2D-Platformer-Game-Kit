@@ -1,31 +1,48 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class Trigger : MonoBehaviour
 {
+    [System.Serializable]
+    public class ReColorObject
+    {
+        public Renderer renderer;
+        public Color newColor;
+        public bool glow;
+    }
+
     static List<Trigger> triggers = new List<Trigger>();
 
-    public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, UNZOOM }
+    public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET }
 
     [Header("Configuration")]
     [Tooltip("Enable to deactivate trigger after one use.")]
-    public bool singleUse;
+    public bool singleUse = false;
+    public bool showConnections = true;
 
     [Header("Camera FX")]
     public CameraZoom cameraZoom;
 
-    [Header("Grow or Shrink Objects")]
-    public List<Transform> growObjects;
-    public List<Transform> shrinkObjects;
-    public List<Transform> resetObjects;
+    [Header("Change Object Size")]
+    public List<ResizeObject> growObjects;
+    public List<ResizeObject> shrinkObjects;
+    public List<ResizeObject> resetObjects;
+
+    [Header("Change Object Color")]
+    public List<SpriteColor> colorObjects;
+    public Color newColor = new Color(0, 0, 0, 1);
+    public bool glow;
 
     [Header("Audio")]
     [Tooltip("Play a short sound effect.")]
-    public AudioClip fxClip;
+    public AudioClip soundFX;
 
     [Tooltip("Play music or ambient soundscape. This will cancel other triggered audio.")]
-    public AudioClip ambientClip;
+    public AudioClip ambientSound;
 
     [Space(5)]
     [Range(0f, 1f)]
@@ -35,6 +52,9 @@ public class Trigger : MonoBehaviour
     bool stopAudio;
     AudioSource audioSource;
     WaitForSeconds wait;
+
+    //MaterialPropertyBlock block;
+    //public Color baseColor;
 
     void Awake()
     {
@@ -74,12 +94,12 @@ public class Trigger : MonoBehaviour
             audioSource.volume = volume;
             audioSource.loop = loop;
 
-            if (fxClip != null)
+            if (soundFX != null)
             {
-                audioSource.PlayOneShot(fxClip);
+                audioSource.PlayOneShot(soundFX);
             }
 
-            if (ambientClip != null)
+            if (ambientSound != null)
             {
                 // Stop ambient audio on other triggers
                 foreach (var t in triggers)
@@ -92,7 +112,7 @@ public class Trigger : MonoBehaviour
 
                 if (!audioSource.isPlaying)
                 {
-                    audioSource.clip = ambientClip;
+                    audioSource.clip = ambientSound;
                     audioSource.Play();
                 }
             }
@@ -112,8 +132,8 @@ public class Trigger : MonoBehaviour
                     FindObjectOfType<FollowCam>()?.ZoomOut();
                     break;
 
-                case CameraZoom.UNZOOM:
-                    FindObjectOfType<FollowCam>()?.UnZoom();
+                case CameraZoom.RESET:
+                    FindObjectOfType<FollowCam>()?.ZoomReset();
                     break;
             }
 
@@ -122,7 +142,7 @@ public class Trigger : MonoBehaviour
             {
                 if (growObjects[i] != null)
                 {
-                    growObjects[i].GetComponent<GrowShrink>()?.Grow();
+                    growObjects[i]?.Grow();
                 }
             }
 
@@ -131,7 +151,7 @@ public class Trigger : MonoBehaviour
             {
                 if (shrinkObjects[i] != null)
                 {
-                    shrinkObjects[i].GetComponent<GrowShrink>()?.Shrink();
+                    shrinkObjects[i]?.Shrink();
                 }
             }
 
@@ -140,14 +160,24 @@ public class Trigger : MonoBehaviour
             {
                 if (resetObjects[i] != null)
                 {
-                    resetObjects[i].GetComponent<GrowShrink>()?.ResetSize();
+                    resetObjects[i]?.ResetSize();
+                }
+            }
+
+            // Color Objects
+            for (var i = 0; i < colorObjects.Count; i++)
+            {
+                if (colorObjects[i] != null)
+                {
+                    colorObjects[i].SetColor(newColor, glow);
                 }
             }
 
             // Single Use
             if (singleUse)
             {
-                var collider = GetComponent<Collider>();
+                var collider = GetComponent<Collider2D>();
+                print(collider);
                 if (collider != null)
                 {
                     collider.enabled = false;
@@ -161,18 +191,56 @@ public class Trigger : MonoBehaviour
         triggers.Remove(this);
     }
 
+#if UNITY_EDITOR
     void OnValidate()
     {
         growObjects.RemoveAll(x => x == null);
         shrinkObjects.RemoveAll(x => x == null);
+        resetObjects.RemoveAll(x => x == null);
+        colorObjects.RemoveAll(x => x == null);
     }
 
     void OnDrawGizmos()
     {
-        Gizmos.color = new Color(0.2f, 1f, 0.2f, 0.5f);
         var localScale = transform.localScale;
+        Gizmos.color = new Color(0.2f, 1f, 0.2f, 0.5f);
         Gizmos.DrawCube(transform.position, new Vector3(localScale.x, localScale.y, 0));
+
+        if (showConnections)
+        {
+            var position = transform.position;
+
+            Gizmos.color = Color.green;
+            foreach (var o in growObjects)
+            {
+                Gizmos.DrawLine(o.transform.position, position);
+                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+            }
+
+            Gizmos.color = Color.cyan;
+            foreach (var o in shrinkObjects)
+            {
+                Gizmos.DrawLine(o.transform.position, position);
+                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+            }
+
+            Gizmos.color = Color.blue;
+            foreach (var o in resetObjects)
+            {
+                Gizmos.DrawLine(o.transform.position, position);
+                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+            }
+
+            Gizmos.color = newColor;
+            var offset = Vector3.right * 0.25f;
+            foreach (var o in colorObjects)
+            {
+                Gizmos.DrawLine(o.transform.position + offset, position + offset);
+                Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+            }
+        }
     }
+#endif
 
     public void StopAudio()
     {

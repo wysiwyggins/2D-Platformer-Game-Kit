@@ -54,7 +54,7 @@ public class FollowCam : MonoBehaviour
         targetSize = origSize * 2;
     }
 
-    public void UnZoom()
+    public void ZoomReset()
     {
         targetSize = origSize;
     }
