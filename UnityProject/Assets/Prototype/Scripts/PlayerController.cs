@@ -10,16 +10,22 @@ public class PlayerController : MonoBehaviour
     const float gravityScale = 8;
     const float airControl = 3;
     const float groundControl = 10;
-    const float maxSpeed = 40;
+    const float maxSpeed = 30;
 
-    float h, velocityX, lerp;
+    public AudioClip jumpSound;
+    public AudioClip bumpSound;
+
+    bool landToggle = true;
+    bool hitToggle = true;
+    LayerMask groundMask = 1;
+    float horizontalInput, velocityX;
     Vector2 velocity;
-    RaycastHit2D groundHit;
+    RaycastHit2D grounded;
+    RaycastHit2D walled;
     Rigidbody2D rb;
     PhysicsMaterial2D mat;
-    LayerMask mask = 1;
     SpriteRenderer spriteRenderer;
-    WaitForFixedUpdate waitForFixed;
+    AudioSource audioSource;
 
     Animator anim;
 
@@ -33,28 +39,28 @@ public class PlayerController : MonoBehaviour
         rb.sharedMaterial = mat;
         spriteRenderer = GetComponent<SpriteRenderer>();
         Cursor.visible = !hideCursor;
+        audioSource = GetComponent<AudioSource>();
     }
 
     void Update()
     {
-        // input
-        h = Input.GetAxisRaw("Horizontal");
-
-        if (Input.GetButtonDown("Jump"))
+        // Jump if grounded or walled
+        if (Input.GetButtonDown("Jump") && (grounded || walled))
         {
-            if (groundHit)
-            {
-                rb.velocity += Vector2.up * jumpSpeed;
-            }
+            // Jump vector - combine jump speed with half current vertical velocity
+            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
+
+            // Play jump sound
+            PlayAudioClip(jumpSound, rb.velocity.y);
         }
 
-        // flip sprite
-        if (Mathf.Abs(h) > 0.01f)
+        // Flip sprite
+        if (Mathf.Abs(horizontalInput) > 0.01f)
         {
-            spriteRenderer.flipX = h < 0f;
+            spriteRenderer.flipX = horizontalInput < 0f;
         }
 
-        // reset
+        // Reset
         if (transform.position.y < -50)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -63,41 +69,78 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        groundHit = Physics2D.CircleCast(rb.position, 0.6f, Vector2.zero, 0, mask.value);
+        // Grab horizontal input here, to sync with physics loop
+        horizontalInput = Input.GetAxisRaw("Horizontal");
 
-        lerp = airControl; // air control
-        if (groundHit) // grounded
+        // Wall/obstacle check
+        walled = Physics2D.CircleCast(rb.position + new Vector2(horizontalInput * 0.4f, 0), 0.3f, Vector2.zero, 0, groundMask.value);
+
+        if (walled)
         {
-            lerp = groundControl;
+            // Reduce horizontal input value if pushing object or against a wall
+            horizontalInput *= 0.5f;
+
+            // Play hit sound
+            var x = Mathf.Abs(velocity.x);
+            if (hitToggle && x > 5)
+            {
+                PlayAudioClip(bumpSound, x);
+            }
+            hitToggle = false;
+        }
+        else
+        {
+            hitToggle = true;
         }
 
-        // reduce horizontal input value if pushing object or against a wall
-        if (Physics2D.CircleCast(rb.position + Vector2.right * h * 0.5f, 0.25f, Vector2.zero, 0, mask.value))
+        // Ground check
+        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.2f, 0.4f, Vector2.zero, 0, groundMask.value);
+
+        // Control and grounding
+        var control = airControl;
+        if (grounded)
         {
-            h *= 0.2f;
+            control = groundControl;
+
+            // Play landing sound
+            var y = Mathf.Abs(velocity.y);
+            if (landToggle && y > 10)
+            {
+                PlayAudioClip(bumpSound, y);
+            }
+            landToggle = false;
+        }
+        else
+        {
+            landToggle = true;
         }
 
-        velocityX = Mathf.Lerp(velocityX, h, Time.fixedDeltaTime * lerp);
+        // Calculate horizontal velocity
+        velocityX = Mathf.Lerp(velocityX, horizontalInput, Time.fixedDeltaTime * control);
         velocity.Set(velocityX * speed, rb.velocity.y);
+
+        // Update velocity
         rb.velocity = velocity;
         rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
-
-        //if (groundHit)
-        //{
-        //    Rigidbody2D r = groundHit.collider.GetComponentInParent<Rigidbody2D>();
-        //    if (r != null) { rb.AddForceAtPosition(r.velocity * 0.5f, groundHit.point, ForceMode2D.Force); } // stick to stuffs
-        //}
     }
 
-    void OnDrawGizmos()
+    void PlayAudioClip(AudioClip clip, float velocity)
     {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, 0.6f);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position + Vector3.right * h * 0.5f, 0.25f);
-
-        Gizmos.color = new Color(1, 0, 0, 0.5f);
-        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
+        if (audioSource != null && clip != null)
+        {
+            var volume = Mathf.Clamp01(Mathf.Abs(velocity) / jumpSpeed);
+            audioSource.pitch = Random.Range(0.9f, 1.1f);
+            audioSource.volume = volume;
+            audioSource.PlayOneShot(clip);
+        }
     }
+
+    //void OnDrawGizmos()
+    //{
+    //    Gizmos.color = Color.green;
+    //    Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.2f, 0.4f);
+
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
+    //}
 }
