@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class Framerate : MonoBehaviour
 {
     public Text uiText;
-    public bool startEnabled;
+    public bool visible;
 
     float framerate;
     float f, t, rate, lerp;
@@ -30,7 +30,7 @@ public class Framerate : MonoBehaviour
             }
         }
 
-        uiText.enabled = startEnabled;
+        uiText.enabled = visible;
     }
 
     void Update()

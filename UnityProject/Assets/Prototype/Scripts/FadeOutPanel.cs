@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class FadeOutPanel : MonoBehaviour
 {
-    Image panel;
+    public Image panel;
     Color origColor;
     Color targetColor;
     float t = 0;
@@ -13,7 +13,6 @@ public class FadeOutPanel : MonoBehaviour
 
     void Start()
     {
-        panel = GetComponent<Image>();
         origColor = panel.color;
         targetColor = panel.color;
         targetColor.a = 0;
@@ -29,7 +28,8 @@ public class FadeOutPanel : MonoBehaviour
 
             if (t > 1)
             {
-                gameObject.SetActive(false);
+                panel.gameObject.SetActive(false);
+                enabled = false;
             }
         }
     }

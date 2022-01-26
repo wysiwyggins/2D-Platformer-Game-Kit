@@ -10,7 +10,8 @@ public class GameManager : SecureSingleton<GameManager>
     protected override void Awake()
     {
         base.Awake();
-foreach (var o in enableOnStart)
+
+        foreach (var o in enableOnStart)
         {
             if (o != null)
             {
@@ -31,12 +32,6 @@ foreach (var o in enableOnStart)
     protected override void OnDestroy()
     {
         base.OnDestroy();
-    }
-
-    void Start()
-    {
-        
-
     }
 
     void OnValidate()

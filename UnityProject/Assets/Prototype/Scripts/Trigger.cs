@@ -102,7 +102,6 @@ public class Trigger : MonoBehaviour
                 {
                     if (t != null && t != this)
                     {
-                        print(t);
                         t.StopAudio();
                     }
                 }
