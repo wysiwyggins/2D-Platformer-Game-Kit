@@ -6,7 +6,7 @@ public class ResizeObject : MonoBehaviour
 {
     Vector3 origScale;
     Vector3 targetScale;
-    Vector3 velocityRef = Vector3.zero;
+    Vector3 velocity = Vector3.zero;
 
     void Awake()
     {
@@ -16,7 +16,7 @@ public class ResizeObject : MonoBehaviour
 
     void Update()
     {
-        transform.localScale = Vector3.SmoothDamp(transform.localScale, targetScale, ref velocityRef, 0.1f);
+        transform.localScale = Vector3.SmoothDamp(transform.localScale, targetScale, ref velocity, 0.1f);
     }
 
     public void Grow()

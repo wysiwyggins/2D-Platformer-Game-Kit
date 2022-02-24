@@ -10,10 +10,8 @@ public class Trigger : MonoBehaviour
     static List<Trigger> triggers = new List<Trigger>();
 
     public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM }
-    public enum CameraShake { NONE, SHAKE }
-    public enum PostProcessingEffect { NONE, BRIGHTEN, DARKEN, HUESHIFT_UP, HUESHIFT_DOWN, DESATURATE, SUPERSATURATE, GRAYSCALE, VIGNETTE, RESET }
 
-    [Header("Settings")]
+    [Header("Configuration")]
     [Tooltip("Enable to deactivate trigger after one use.")]
     public bool singleUse = false;
     public bool showLinesAndLabels = true;
@@ -21,10 +19,6 @@ public class Trigger : MonoBehaviour
 
     [Header("Camera Control")]
     public CameraZoom cameraZoom;
-    public CameraShake cameraShake;
-
-    [Header("Post Processing")]
-    public PostProcessingEffect effect;
 
     [Header("Change Object Size")]
     public List<ResizeObject> growObjects;
@@ -88,73 +82,54 @@ public class Trigger : MonoBehaviour
 
     IEnumerator OnTriggerEnter2D(Collider2D collision)
     {
+        yield return wait;
+
         if (collision.gameObject.CompareTag("Player"))
         {
-            // Camera Zoom
+            // Audio
+            audioSource.volume = volume;
+            audioSource.loop = loop;
+
+            if (soundFX != null)
+            {
+                audioSource.PlayOneShot(soundFX);
+            }
+
+            if (ambientSound != null)
+            {
+                // Stop ambient audio on other triggers
+                foreach (var t in triggers)
+                {
+                    if (t != null && t != this)
+                    {
+                        t.StopAudio();
+                    }
+                }
+
+                if (!audioSource.isPlaying)
+                {
+                    audioSource.clip = ambientSound;
+                    audioSource.Play();
+                }
+            }
+
+
+            // Camera
             switch (cameraZoom)
             {
                 case CameraZoom.NONE:
                     break;
 
                 case CameraZoom.ZOOM_IN:
-                    FindObjectOfType<CameraController>()?.ZoomIn();
+                    FindObjectOfType<FollowCam>()?.ZoomIn();
                     break;
 
                 case CameraZoom.ZOOM_OUT:
-                    FindObjectOfType<CameraController>()?.ZoomOut();
+                    FindObjectOfType<FollowCam>()?.ZoomOut();
                     break;
 
                 case CameraZoom.RESET_ZOOM:
-                    FindObjectOfType<CameraController>()?.ZoomReset();
-                    break;
-            }
-
-            // Camera Shake
-            switch (cameraShake)
-            {
-                case CameraShake.SHAKE:
-                    FindObjectOfType<CameraController>()?.Shake();
-                    break;
-
-            }
-
-            // Post Processing
-            switch (effect)
-            {
-                case PostProcessingEffect.BRIGHTEN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 1);
-                    break;
-
-                case PostProcessingEffect.DARKEN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, -1);
-                    break;
-
-                case PostProcessingEffect.HUESHIFT_UP:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 45);
-                    break;
-
-                case PostProcessingEffect.HUESHIFT_DOWN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, -45);
-                    break;
-
-                case PostProcessingEffect.DESATURATE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -50);
-                    break;
-
-                case PostProcessingEffect.SUPERSATURATE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 50);
-                    break;
-
-                case PostProcessingEffect.GRAYSCALE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -100);
-                    break;
-
-                case PostProcessingEffect.VIGNETTE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0.45f);
-                    break;
-
-                case PostProcessingEffect.RESET:
-                    FindObjectOfType<CameraController>()?.ResetAllEffects();
+                    FindObjectOfType<FollowCam>()?.ZoomReset();
                     break;
             }
 
@@ -212,45 +187,17 @@ public class Trigger : MonoBehaviour
                 }
             }
 
-            // Audio
-            audioSource.volume = volume;
-            audioSource.loop = loop;
-
-            if (soundFX != null)
-            {
-                audioSource.PlayOneShot(soundFX);
-            }
-
-            if (ambientSound != null)
-            {
-                // Stop ambient audio on other triggers
-                foreach (var t in triggers)
-                {
-                    if (t != null && t != this)
-                    {
-                        t.StopAudio();
-                    }
-                }
-
-                if (!audioSource.isPlaying)
-                {
-                    audioSource.clip = ambientSound;
-                    audioSource.Play();
-                }
-            }
-
             // Single Use
             if (singleUse)
             {
                 var collider = GetComponent<Collider2D>();
+                print(collider);
                 if (collider != null)
                 {
                     collider.enabled = false;
                 }
             }
         }
-
-        yield return wait;
     }
 
     void OnDestroy()
