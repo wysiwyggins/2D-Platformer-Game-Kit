@@ -51,13 +51,16 @@ public class Trigger : MonoBehaviour
     [Tooltip("Play a short sound effect.")]
     public AudioClip soundFX;
 
-    [Tooltip("Play music or ambient soundscape. This will cancel other triggered audio.")]
+    [Tooltip("Play music or ambient soundscape. This will pause other triggered ambient audio.")]
     public AudioClip ambientSound;
+    [Tooltip("Pause ambient sounds. Only affects other audio sources.")]
+    public bool pauseAmbientSound;
+
     [Range(0f, 1f)]
     public float volume = 1;
     public bool loop = true;
 
-    bool stopAudio;
+    bool pauseAudio;
     AudioSource audioSource;
     WaitForSeconds wait;
 
@@ -82,14 +85,14 @@ public class Trigger : MonoBehaviour
 
     void Update()
     {
-        if (stopAudio)
+        if (pauseAudio)
         {
             audioSource.volume -= Time.deltaTime; // Fade out
 
             if (audioSource.volume < Mathf.Epsilon)
             {
-                audioSource.Stop();
-                stopAudio = false;
+                audioSource.Pause();
+                pauseAudio = false;
             }
         }
     }
@@ -105,15 +108,15 @@ public class Trigger : MonoBehaviour
                     break;
 
                 case CameraZoom.ZOOM_IN:
-                    FindObjectOfType<FollowCam>()?.ZoomIn();
+                    FindObjectOfType<CameraController>()?.ZoomIn();
                     break;
 
                 case CameraZoom.ZOOM_OUT:
-                    FindObjectOfType<FollowCam>()?.ZoomOut();
+                    FindObjectOfType<CameraController>()?.ZoomOut();
                     break;
 
                 case CameraZoom.RESET_ZOOM:
-                    FindObjectOfType<FollowCam>()?.ZoomReset();
+                    FindObjectOfType<CameraController>()?.ZoomReset();
                     break;
             }
 
@@ -130,60 +133,60 @@ public class Trigger : MonoBehaviour
             switch (exposure)
             {
                 case Exposure.BRIGHTEN:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, 1);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 1);
                     break;
 
                 case Exposure.DARKEN:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, -1);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, -1);
                     break;
 
                 case Exposure.RESET:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, 0);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 0);
                     break;
             }
 
             switch (hueShift)
             {
                 case HueShift.UP:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, 45);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 45);
                     break;
 
                 case HueShift.DOWN:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, -45);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, -45);
                     break;
 
                 case HueShift.RESET:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, 0);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 0);
                     break;
             }
 
             switch (saturation)
             {
                 case Saturation.DESATURATE:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, -50);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -50);
                     break;
 
                 case Saturation.SUPERSATURATE:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, 50);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 50);
                     break;
 
                 case Saturation.GRAYSCALE:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, -100);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -100);
                     break;
 
                 case Saturation.RESET:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, 0);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 0);
                     break;
             }
 
             switch (vignette)
             {
                 case Vignette.ON:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.VIGNETTE, 0.45f);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0.45f);
                     break;
 
                 case Vignette.RESET:
-                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.VIGNETTE, 0);
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0);
                     break;
             }
 
@@ -259,14 +262,14 @@ public class Trigger : MonoBehaviour
                 audioSource.PlayOneShot(soundFX);
             }
 
-            if (ambientSound != null)
+            if (ambientSound != null || pauseAmbientSound)
             {
                 // Stop ambient audio on other triggers
                 foreach (var t in triggers)
                 {
                     if (t != null && t != this)
                     {
-                        t.StopAudio();
+                        t.PauseAudio();
                     }
                 }
 
@@ -403,11 +406,11 @@ public class Trigger : MonoBehaviour
     }
 #endif
 
-    public void StopAudio()
+    public void PauseAudio()
     {
         if (audioSource.isPlaying)
         {
-            stopAudio = true;
+            pauseAudio = true;
         }
     }
 }

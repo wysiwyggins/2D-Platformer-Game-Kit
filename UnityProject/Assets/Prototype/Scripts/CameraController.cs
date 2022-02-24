@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class FollowCam : MonoBehaviour
+public class CameraController : MonoBehaviour
 {
     public enum Type { EXPOSURE, HUE, SATURATION, VIGNETTE }
 
