@@ -121,7 +121,9 @@ public class PlayerController : MonoBehaviour
 
         // Update velocity
         rb.velocity = velocity;
-        rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
+
+        // Speed Limit
+        //rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
     }
 
     void PlayAudioClip(AudioClip clip, float velocity)

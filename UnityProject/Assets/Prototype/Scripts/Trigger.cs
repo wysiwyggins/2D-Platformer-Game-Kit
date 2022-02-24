@@ -5,13 +5,17 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+[RequireComponent(typeof(AudioSource), typeof(Collider2D))]
 public class Trigger : MonoBehaviour
 {
     static List<Trigger> triggers = new List<Trigger>();
 
     public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM }
-    public enum CameraShake { NONE, SHAKE }
-    public enum PostProcessingEffect { NONE, BRIGHTEN, DARKEN, HUESHIFT_UP, HUESHIFT_DOWN, DESATURATE, SUPERSATURATE, GRAYSCALE, VIGNETTE, RESET }
+    public enum Exposure { NONE, BRIGHTEN, DARKEN, RESET }
+    public enum HueShift { NONE, UP, DOWN, RESET }
+    public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
+    public enum Vignette { NONE, ON, RESET }
+    //public enum PostProcessingEffect { NONE, BRIGHTEN, DARKEN, HUESHIFT_UP, HUESHIFT_DOWN, DESATURATE, SUPERSATURATE, GRAYSCALE, VIGNETTE, RESET }
 
     [Header("Settings")]
     [Tooltip("Enable to deactivate trigger after one use.")]
@@ -21,10 +25,12 @@ public class Trigger : MonoBehaviour
 
     [Header("Camera Control")]
     public CameraZoom cameraZoom;
-    public CameraShake cameraShake;
 
     [Header("Post Processing")]
-    public PostProcessingEffect effect;
+    public Exposure exposure;
+    public HueShift hueShift;
+    public Saturation saturation;
+    public Vignette vignette;
 
     [Header("Change Object Size")]
     public List<ResizeObject> growObjects;
@@ -35,6 +41,7 @@ public class Trigger : MonoBehaviour
     public Color newColor = new Color(0, 0, 0, 1);
     public bool glow;
     public List<SpriteColor> colorObjects;
+    public List<SpriteColor> resetColor;
 
     [Header("Show or Hide Objects")]
     public List<GameObject> showObjects;
@@ -56,13 +63,14 @@ public class Trigger : MonoBehaviour
 
     void Awake()
     {
-        // Register object in class
+        audioSource = GetComponent<AudioSource>();
+        GetComponent<Collider2D>().isTrigger = true;
+
+        // Register trigger
         if (!triggers.Contains(this))
         {
             triggers.Add(this);
         }
-
-        audioSource = GetComponent<AudioSource>();
 
         if (hideInGame)
         {
@@ -97,64 +105,85 @@ public class Trigger : MonoBehaviour
                     break;
 
                 case CameraZoom.ZOOM_IN:
-                    FindObjectOfType<CameraController>()?.ZoomIn();
+                    FindObjectOfType<FollowCam>()?.ZoomIn();
                     break;
 
                 case CameraZoom.ZOOM_OUT:
-                    FindObjectOfType<CameraController>()?.ZoomOut();
+                    FindObjectOfType<FollowCam>()?.ZoomOut();
                     break;
 
                 case CameraZoom.RESET_ZOOM:
-                    FindObjectOfType<CameraController>()?.ZoomReset();
+                    FindObjectOfType<FollowCam>()?.ZoomReset();
                     break;
             }
 
             // Camera Shake
-            switch (cameraShake)
-            {
-                case CameraShake.SHAKE:
-                    FindObjectOfType<CameraController>()?.Shake();
-                    break;
+            //switch (cameraShake)
+            //{
+            //    case CameraShake.SHAKE:
+            //        FindObjectOfType<CameraController>()?.Shake();
+            //        break;
 
-            }
+            //}
 
             // Post Processing
-            switch (effect)
+            switch (exposure)
             {
-                case PostProcessingEffect.BRIGHTEN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 1);
+                case Exposure.BRIGHTEN:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, 1);
                     break;
 
-                case PostProcessingEffect.DARKEN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, -1);
+                case Exposure.DARKEN:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, -1);
                     break;
 
-                case PostProcessingEffect.HUESHIFT_UP:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 45);
+                case Exposure.RESET:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.EXPOSURE, 0);
+                    break;
+            }
+
+            switch (hueShift)
+            {
+                case HueShift.UP:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, 45);
                     break;
 
-                case PostProcessingEffect.HUESHIFT_DOWN:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, -45);
+                case HueShift.DOWN:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, -45);
                     break;
 
-                case PostProcessingEffect.DESATURATE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -50);
+                case HueShift.RESET:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.HUE, 0);
+                    break;
+            }
+
+            switch (saturation)
+            {
+                case Saturation.DESATURATE:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, -50);
                     break;
 
-                case PostProcessingEffect.SUPERSATURATE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 50);
+                case Saturation.SUPERSATURATE:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, 50);
                     break;
 
-                case PostProcessingEffect.GRAYSCALE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -100);
+                case Saturation.GRAYSCALE:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, -100);
                     break;
 
-                case PostProcessingEffect.VIGNETTE:
-                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0.45f);
+                case Saturation.RESET:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.SATURATION, 0);
+                    break;
+            }
+
+            switch (vignette)
+            {
+                case Vignette.ON:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.VIGNETTE, 0.45f);
                     break;
 
-                case PostProcessingEffect.RESET:
-                    FindObjectOfType<CameraController>()?.ResetAllEffects();
+                case Vignette.RESET:
+                    FindObjectOfType<FollowCam>()?.SetEffect(FollowCam.Type.VIGNETTE, 0);
                     break;
             }
 
@@ -163,7 +192,7 @@ public class Trigger : MonoBehaviour
             {
                 if (growObjects[i] != null)
                 {
-                    growObjects[i]?.Grow();
+                    growObjects[i].Grow();
                 }
             }
 
@@ -172,16 +201,16 @@ public class Trigger : MonoBehaviour
             {
                 if (shrinkObjects[i] != null)
                 {
-                    shrinkObjects[i]?.Shrink();
+                    shrinkObjects[i].Shrink();
                 }
             }
 
-            // Shrink Objects
+            // Reset Objects
             for (var i = 0; i < resetObjects.Count; i++)
             {
                 if (resetObjects[i] != null)
                 {
-                    resetObjects[i]?.ResetSize();
+                    resetObjects[i].ResetSize();
                 }
             }
 
@@ -209,6 +238,15 @@ public class Trigger : MonoBehaviour
                 if (colorObjects[i] != null)
                 {
                     colorObjects[i].SetColor(newColor, glow);
+                }
+            }
+
+            // Reset Color
+            for (var i = 0; i < resetColor.Count; i++)
+            {
+                if (resetColor[i] != null)
+                {
+                    resetColor[i].ResetColor();
                 }
             }
 
@@ -261,12 +299,13 @@ public class Trigger : MonoBehaviour
 #if UNITY_EDITOR
     void OnValidate()
     {
-        growObjects.RemoveAll(x => x == null);
-        shrinkObjects.RemoveAll(x => x == null);
-        resetObjects.RemoveAll(x => x == null);
-        showObjects.RemoveAll(x => x == null);
-        hideObjects.RemoveAll(x => x == null);
-        colorObjects.RemoveAll(x => x == null);
+        // Remove null elements
+        //growObjects.RemoveAll(x => x == null);
+        //shrinkObjects.RemoveAll(x => x == null);
+        //resetObjects.RemoveAll(x => x == null);
+        //showObjects.RemoveAll(x => x == null);
+        //hideObjects.RemoveAll(x => x == null);
+        //colorObjects.RemoveAll(x => x == null);
     }
 
     void OnDrawGizmos()
@@ -303,44 +342,62 @@ public class Trigger : MonoBehaviour
             Gizmos.color = Color.white;
             foreach (var o in growObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+                }
             }
 
             Gizmos.color = Color.gray;
             foreach (var o in shrinkObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+                }
             }
 
             Gizmos.color = Color.black;
             foreach (var o in resetObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+                }
             }
 
             Gizmos.color = Color.green;
             foreach (var o in showObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show");
+                }
             }
 
             Gizmos.color = Color.red;
             foreach (var o in hideObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide");
+                }
             }
 
             Gizmos.color = newColor;
             var offset = Vector3.right * 0.25f;
             foreach (var o in colorObjects)
             {
-                Gizmos.DrawLine(o.transform.position + offset, position + offset);
-                Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position + offset, position + offset);
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+                }
             }
         }
     }

@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class CameraController : MonoBehaviour
+public class FollowCam : MonoBehaviour
 {
     public enum Type { EXPOSURE, HUE, SATURATION, VIGNETTE }
 
@@ -22,8 +22,12 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
-        GetComponent<Volume>().profile.TryGet(out colorAdjustments);
-        GetComponent<Volume>().profile.TryGet(out vignette);
+        var volume = GetComponent<Volume>();
+        if (volume != null && volume.isGlobal)
+        {
+            GetComponent<Volume>().profile.TryGet(out colorAdjustments);
+            GetComponent<Volume>().profile.TryGet(out vignette);
+        }
 
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
@@ -52,7 +56,7 @@ public class CameraController : MonoBehaviour
             var s = speed;
             if (Vector3.Distance(targetPosition, transform.position) > 7)
             {
-                s = speed * 15;
+                s = speed * 5;
             }
 
             // Adjust lerp speed
@@ -100,15 +104,6 @@ public class CameraController : MonoBehaviour
     public void Shake()
     {
         shakeMultiplier = 0.25f;
-    }
-
-    public void ResetAllEffects()
-    {
-        targetExposure = 0;
-        targetHue = 0;
-        targetSaturation = 0;
-        targetVignetteIntensity = 0;
-        t = 0;
     }
 
     public void SetEffect(Type type, float value)
