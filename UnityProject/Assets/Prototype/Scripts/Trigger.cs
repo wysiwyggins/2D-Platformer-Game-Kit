@@ -5,13 +5,19 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+[RequireComponent(typeof(AudioSource), typeof(Collider2D))]
 public class Trigger : MonoBehaviour
 {
     static List<Trigger> triggers = new List<Trigger>();
 
     public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM }
+    public enum Exposure { NONE, BRIGHTEN, DARKEN, RESET }
+    public enum HueShift { NONE, UP, DOWN, RESET }
+    public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
+    public enum Vignette { NONE, ON, RESET }
+    //public enum PostProcessingEffect { NONE, BRIGHTEN, DARKEN, HUESHIFT_UP, HUESHIFT_DOWN, DESATURATE, SUPERSATURATE, GRAYSCALE, VIGNETTE, RESET }
 
-    [Header("Configuration")]
+    [Header("Settings")]
     [Tooltip("Enable to deactivate trigger after one use.")]
     public bool singleUse = false;
     public bool showLinesAndLabels = true;
@@ -19,6 +25,12 @@ public class Trigger : MonoBehaviour
 
     [Header("Camera Control")]
     public CameraZoom cameraZoom;
+
+    [Header("Post Processing")]
+    public Exposure exposure;
+    public HueShift hueShift;
+    public Saturation saturation;
+    public Vignette vignette;
 
     [Header("Change Object Size")]
     public List<ResizeObject> growObjects;
@@ -29,6 +41,7 @@ public class Trigger : MonoBehaviour
     public Color newColor = new Color(0, 0, 0, 1);
     public bool glow;
     public List<SpriteColor> colorObjects;
+    public List<SpriteColor> resetColor;
 
     [Header("Show or Hide Objects")]
     public List<GameObject> showObjects;
@@ -38,25 +51,29 @@ public class Trigger : MonoBehaviour
     [Tooltip("Play a short sound effect.")]
     public AudioClip soundFX;
 
-    [Tooltip("Play music or ambient soundscape. This will cancel other triggered audio.")]
+    [Tooltip("Play music or ambient soundscape. This will pause other triggered ambient audio.")]
     public AudioClip ambientSound;
+    [Tooltip("Pause ambient sounds. Only affects other audio sources.")]
+    public bool pauseAmbientSound;
+
     [Range(0f, 1f)]
     public float volume = 1;
     public bool loop = true;
 
-    bool stopAudio;
+    bool pauseAudio;
     AudioSource audioSource;
     WaitForSeconds wait;
 
     void Awake()
     {
-        // Register object in class
+        audioSource = GetComponent<AudioSource>();
+        GetComponent<Collider2D>().isTrigger = true;
+
+        // Register trigger
         if (!triggers.Contains(this))
         {
             triggers.Add(this);
         }
-
-        audioSource = GetComponent<AudioSource>();
 
         if (hideInGame)
         {
@@ -68,68 +85,108 @@ public class Trigger : MonoBehaviour
 
     void Update()
     {
-        if (stopAudio)
+        if (pauseAudio)
         {
             audioSource.volume -= Time.deltaTime; // Fade out
 
             if (audioSource.volume < Mathf.Epsilon)
             {
-                audioSource.Stop();
-                stopAudio = false;
+                audioSource.Pause();
+                pauseAudio = false;
             }
         }
     }
 
     IEnumerator OnTriggerEnter2D(Collider2D collision)
     {
-        yield return wait;
-
         if (collision.gameObject.CompareTag("Player"))
         {
-            // Audio
-            audioSource.volume = volume;
-            audioSource.loop = loop;
-
-            if (soundFX != null)
-            {
-                audioSource.PlayOneShot(soundFX);
-            }
-
-            if (ambientSound != null)
-            {
-                // Stop ambient audio on other triggers
-                foreach (var t in triggers)
-                {
-                    if (t != null && t != this)
-                    {
-                        t.StopAudio();
-                    }
-                }
-
-                if (!audioSource.isPlaying)
-                {
-                    audioSource.clip = ambientSound;
-                    audioSource.Play();
-                }
-            }
-
-
-            // Camera
+            // Camera Zoom
             switch (cameraZoom)
             {
                 case CameraZoom.NONE:
                     break;
 
                 case CameraZoom.ZOOM_IN:
-                    FindObjectOfType<FollowCam>()?.ZoomIn();
+                    FindObjectOfType<CameraController>()?.ZoomIn();
                     break;
 
                 case CameraZoom.ZOOM_OUT:
-                    FindObjectOfType<FollowCam>()?.ZoomOut();
+                    FindObjectOfType<CameraController>()?.ZoomOut();
                     break;
 
                 case CameraZoom.RESET_ZOOM:
-                    FindObjectOfType<FollowCam>()?.ZoomReset();
+                    FindObjectOfType<CameraController>()?.ZoomReset();
+                    break;
+            }
+
+            // Camera Shake
+            //switch (cameraShake)
+            //{
+            //    case CameraShake.SHAKE:
+            //        FindObjectOfType<CameraController>()?.Shake();
+            //        break;
+
+            //}
+
+            // Post Processing
+            switch (exposure)
+            {
+                case Exposure.BRIGHTEN:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 1);
+                    break;
+
+                case Exposure.DARKEN:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, -1);
+                    break;
+
+                case Exposure.RESET:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.EXPOSURE, 0);
+                    break;
+            }
+
+            switch (hueShift)
+            {
+                case HueShift.UP:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 45);
+                    break;
+
+                case HueShift.DOWN:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, -45);
+                    break;
+
+                case HueShift.RESET:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.HUE, 0);
+                    break;
+            }
+
+            switch (saturation)
+            {
+                case Saturation.DESATURATE:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -50);
+                    break;
+
+                case Saturation.SUPERSATURATE:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 50);
+                    break;
+
+                case Saturation.GRAYSCALE:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, -100);
+                    break;
+
+                case Saturation.RESET:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.SATURATION, 0);
+                    break;
+            }
+
+            switch (vignette)
+            {
+                case Vignette.ON:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0.45f);
+                    break;
+
+                case Vignette.RESET:
+                    FindObjectOfType<CameraController>()?.SetEffect(CameraController.Type.VIGNETTE, 0);
                     break;
             }
 
@@ -138,7 +195,7 @@ public class Trigger : MonoBehaviour
             {
                 if (growObjects[i] != null)
                 {
-                    growObjects[i]?.Grow();
+                    growObjects[i].Grow();
                 }
             }
 
@@ -147,16 +204,16 @@ public class Trigger : MonoBehaviour
             {
                 if (shrinkObjects[i] != null)
                 {
-                    shrinkObjects[i]?.Shrink();
+                    shrinkObjects[i].Shrink();
                 }
             }
 
-            // Shrink Objects
+            // Reset Objects
             for (var i = 0; i < resetObjects.Count; i++)
             {
                 if (resetObjects[i] != null)
                 {
-                    resetObjects[i]?.ResetSize();
+                    resetObjects[i].ResetSize();
                 }
             }
 
@@ -187,17 +244,54 @@ public class Trigger : MonoBehaviour
                 }
             }
 
+            // Reset Color
+            for (var i = 0; i < resetColor.Count; i++)
+            {
+                if (resetColor[i] != null)
+                {
+                    resetColor[i].ResetColor();
+                }
+            }
+
+            // Audio
+            audioSource.volume = volume;
+            audioSource.loop = loop;
+
+            if (soundFX != null)
+            {
+                audioSource.PlayOneShot(soundFX);
+            }
+
+            if (ambientSound != null || pauseAmbientSound)
+            {
+                // Stop ambient audio on other triggers
+                foreach (var t in triggers)
+                {
+                    if (t != null && t != this)
+                    {
+                        t.PauseAudio();
+                    }
+                }
+
+                if (!audioSource.isPlaying)
+                {
+                    audioSource.clip = ambientSound;
+                    audioSource.Play();
+                }
+            }
+
             // Single Use
             if (singleUse)
             {
                 var collider = GetComponent<Collider2D>();
-                print(collider);
                 if (collider != null)
                 {
                     collider.enabled = false;
                 }
             }
         }
+
+        yield return wait;
     }
 
     void OnDestroy()
@@ -208,12 +302,13 @@ public class Trigger : MonoBehaviour
 #if UNITY_EDITOR
     void OnValidate()
     {
-        growObjects.RemoveAll(x => x == null);
-        shrinkObjects.RemoveAll(x => x == null);
-        resetObjects.RemoveAll(x => x == null);
-        showObjects.RemoveAll(x => x == null);
-        hideObjects.RemoveAll(x => x == null);
-        colorObjects.RemoveAll(x => x == null);
+        // Remove null elements
+        //growObjects.RemoveAll(x => x == null);
+        //shrinkObjects.RemoveAll(x => x == null);
+        //resetObjects.RemoveAll(x => x == null);
+        //showObjects.RemoveAll(x => x == null);
+        //hideObjects.RemoveAll(x => x == null);
+        //colorObjects.RemoveAll(x => x == null);
     }
 
     void OnDrawGizmos()
@@ -250,54 +345,72 @@ public class Trigger : MonoBehaviour
             Gizmos.color = Color.white;
             foreach (var o in growObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+                }
             }
 
             Gizmos.color = Color.gray;
             foreach (var o in shrinkObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+                }
             }
 
             Gizmos.color = Color.black;
             foreach (var o in resetObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+                }
             }
 
             Gizmos.color = Color.green;
             foreach (var o in showObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show");
+                }
             }
 
             Gizmos.color = Color.red;
             foreach (var o in hideObjects)
             {
-                Gizmos.DrawLine(o.transform.position, position);
-                Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide");
+                }
             }
 
             Gizmos.color = newColor;
             var offset = Vector3.right * 0.25f;
             foreach (var o in colorObjects)
             {
-                Gizmos.DrawLine(o.transform.position + offset, position + offset);
-                Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position + offset, position + offset);
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+                }
             }
         }
     }
 #endif
 
-    public void StopAudio()
+    public void PauseAudio()
     {
         if (audioSource.isPlaying)
         {
-            stopAudio = true;
+            pauseAudio = true;
         }
     }
 }

@@ -5,10 +5,12 @@ using UnityEngine;
 public class SpriteColor : MonoBehaviour
 {
     public bool glow;
+    Color origColor;
 
     void Awake()
     {
         RefreshColor();
+        origColor = GetComponent<SpriteRenderer>().color;
     }
 
     public void SetColor(Color color, bool glow)
@@ -21,6 +23,11 @@ public class SpriteColor : MonoBehaviour
         //block.SetColor(_BaseColor, new Color(0, 0, 0, color.a));
         block.SetVector(_EmissionColor, glow ? (Vector4)color * 3 : (Vector4)color);
         spriteRenderer.SetPropertyBlock(block);
+    }
+
+    public void ResetColor()
+    {
+        SetColor(origColor, glow);
     }
 
     void RefreshColor()
