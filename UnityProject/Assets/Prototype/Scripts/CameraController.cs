@@ -18,7 +18,7 @@ public class CameraController : MonoBehaviour
     float targetHue = 0;
     float targetSaturation = 0;
     float targetVignetteIntensity = 0;
-    float lerp, origSize, targetSize, velocity, t, shakeMultiplier;
+    float origSize, targetSize, velocity, t, shakeMultiplier;
 
     void Start()
     {
@@ -53,14 +53,7 @@ public class CameraController : MonoBehaviour
             targetPosition.x = player.position.x;
 
             // Speed up camera if target quickly moves away from center
-            var s = speed;
-            if (Vector3.Distance(targetPosition, transform.position) > 7)
-            {
-                s = speed * 5;
-            }
-
-            // Adjust lerp speed
-            lerp = Mathf.Lerp(lerp, s, Time.deltaTime * 5);
+            var lerp = Mathf.Max(Vector3.Distance(targetPosition, transform.position) * 3, speed);
             transform.position = Vector3.Lerp(transform.position, targetPosition, deltaTime * lerp);
             camera.orthographicSize = Mathf.SmoothDamp(camera.orthographicSize, targetSize, ref velocity, 0.5f);
 
