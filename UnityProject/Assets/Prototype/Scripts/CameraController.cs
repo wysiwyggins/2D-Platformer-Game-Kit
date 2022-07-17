@@ -18,7 +18,7 @@ public class CameraController : MonoBehaviour
     float targetHue = 0;
     float targetSaturation = 0;
     float targetVignetteIntensity = 0;
-    float origSize, targetSize, velocity, t, shakeMultiplier;
+    float origSize, targetSize, velocity, t, shakeMultiplier, lerp, x, y;
 
     void Start()
     {
@@ -48,16 +48,19 @@ public class CameraController : MonoBehaviour
         // Camera Motion
         if (player != null)
         {
-            // Compute offset and match camera x position to target x position
+            // Smoothly move camera to follow player
             var targetPosition = player.position + offset;
-            targetPosition.x = player.position.x;
+            var deltaY = Mathf.Abs(targetPosition.y - transform.position.y);
+            x = Mathf.Lerp(x, targetPosition.x, deltaTime * speed);
+            y = Mathf.Lerp(y, targetPosition.y, deltaTime * Mathf.Max(deltaY, speed));
+            targetPosition.x = x;
+            targetPosition.y = y;
+            transform.position = targetPosition;
 
-            // Speed up camera if target quickly moves away from center
-            var lerp = Mathf.Max(Vector3.Distance(targetPosition, transform.position) * 3, speed);
-            transform.position = Vector3.Lerp(transform.position, targetPosition, deltaTime * lerp);
+            // Camera zoom
             camera.orthographicSize = Mathf.SmoothDamp(camera.orthographicSize, targetSize, ref velocity, 0.5f);
 
-            // Camera Shake
+            // Camera shake
             shakeVector = Vector3.Lerp(shakeVector, Random.onUnitSphere.normalized, deltaTime * 30);
             shakeMultiplier = Mathf.Clamp01(shakeMultiplier - deltaTime / 2);
             transform.position += shakeVector * shakeMultiplier;

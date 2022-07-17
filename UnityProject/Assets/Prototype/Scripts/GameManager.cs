@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class GameManager : SecureSingleton<GameManager>
 {
+    PlayerController pc;
+
     public List<GameObject> enableOnStart;
     public List<GameObject> disableOnStart;
 
@@ -34,6 +36,12 @@ public class GameManager : SecureSingleton<GameManager>
         base.OnDestroy();
     }
 
+    void Update()
+    {
+        // Input
+
+    }
+
     void OnValidate()
     {
         enableOnStart.RemoveAll(x => x == null);
@@ -45,5 +53,10 @@ public class GameManager : SecureSingleton<GameManager>
         // Draw death box at -50 on y axis
         Gizmos.color = new Color(1, 0, 0, 0.5f);
         Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
+    }
+
+    public static void RegisterPlayer(PlayerController pc)
+    {
+        This.pc = pc;
     }
 }
