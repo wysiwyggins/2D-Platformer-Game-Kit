@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
 
     bool landToggle = true;
     bool hitToggle = true;
+    bool jump;
     LayerMask groundMask = 1;
     float horizontalInput, velocityX;
     Vector2 velocity;
@@ -47,11 +48,7 @@ public class PlayerController : MonoBehaviour
         // Jump if grounded or walled
         if (Input.GetButtonDown("Jump") && (grounded || walled))
         {
-            // Jump vector - combine jump speed with half current vertical velocity
-            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
-
-            // Play jump sound
-            PlayAudioClip(jumpSound, rb.velocity.y);
+            jump = true;
         }
 
         // Flip sprite
@@ -95,6 +92,17 @@ public class PlayerController : MonoBehaviour
 
         // Ground check
         grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.2f, 0.4f, Vector2.zero, 0, groundMask.value);
+
+        // Jump
+        if (jump && (grounded || walled))
+        {
+            // Jump vector - combine jump speed with half current vertical velocity
+            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
+
+            // Play jump sound
+            PlayAudioClip(jumpSound, rb.velocity.y);
+            jump = false;
+        }
 
         // Control and grounding
         var control = airControl;
