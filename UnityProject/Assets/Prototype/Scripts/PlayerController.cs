@@ -27,12 +27,13 @@ public class PlayerController : MonoBehaviour
     PhysicsMaterial2D mat;
     SpriteRenderer spriteRenderer;
     AudioSource audioSource;
+    TrailRenderer trail;
 
     Animator anim;
 
     void Awake()
     {
-        Time.fixedDeltaTime = 1 / 100f;
+        Time.fixedDeltaTime = 1 / 99f;
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityScale;
         mat = new PhysicsMaterial2D();
@@ -41,6 +42,14 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         Cursor.visible = !hideCursor;
         audioSource = GetComponent<AudioSource>();
+        trail = GetComponent<TrailRenderer>();
+
+#if !UNITY_EDITOR
+        if (trail != null)
+        {
+            trail.enabled = false;
+        }
+#endif
     }
 
     void Update()
@@ -91,7 +100,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Ground check
-        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.2f, 0.4f, Vector2.zero, 0, groundMask.value);
+        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.4f, 0.4f, Vector2.zero, 0, groundMask.value);
 
         // Jump
         if (jump && (grounded || walled))
@@ -145,12 +154,12 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    //void OnDrawGizmos()
-    //{
-    //    Gizmos.color = Color.green;
-    //    Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.2f, 0.4f);
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.4f, 0.4f);
 
-    //    Gizmos.color = Color.yellow;
-    //    Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
-    //}
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
+    }
 }

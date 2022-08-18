@@ -29,6 +29,7 @@ public class GameManager : SecureSingleton<GameManager>
             }
         }
 
+        DontDestroyOnLoad(gameObject);
     }
 
     protected override void OnDestroy()
