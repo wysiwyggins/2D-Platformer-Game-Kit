@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class FadeOutPanel : MonoBehaviour
+public class FadeInPanel : MonoBehaviour
 {
     public Image panel;
     Color origColor;
@@ -13,9 +13,9 @@ public class FadeOutPanel : MonoBehaviour
     void Start()
     {
         origColor = panel.color;
-        origColor.a = 1;
+        origColor.a = 0;
         targetColor = panel.color;
-        targetColor.a = 0;
+        targetColor.a = 1;
 
     }
 
@@ -26,7 +26,6 @@ public class FadeOutPanel : MonoBehaviour
 
         if (t > 1)
         {
-            panel.gameObject.SetActive(false);
             enabled = false;
         }
     }

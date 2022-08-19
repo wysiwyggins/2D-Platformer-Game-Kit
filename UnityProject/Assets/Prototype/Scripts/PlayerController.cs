@@ -4,7 +4,11 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    const bool hideCursor = true;
+    public AudioClip jumpSound;
+    public AudioClip bumpSound;
+    
+    public float HorizontalInput { get; set; }
+
     const float speed = 10;
     const float jumpSpeed = 25;
     const float gravityScale = 8;
@@ -12,14 +16,10 @@ public class PlayerController : MonoBehaviour
     const float groundControl = 10;
     const float maxSpeed = 30;
 
-    public AudioClip jumpSound;
-    public AudioClip bumpSound;
-
     bool landToggle = true;
     bool hitToggle = true;
-    bool jump;
     LayerMask groundMask = 1;
-    float horizontalInput, velocityX;
+    float velocityX;
     Vector2 velocity;
     RaycastHit2D grounded;
     RaycastHit2D walled;
@@ -33,14 +33,13 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        Time.fixedDeltaTime = 1 / 99f;
+        
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityScale;
         mat = new PhysicsMaterial2D();
         mat.friction = 0;
         rb.sharedMaterial = mat;
         spriteRenderer = GetComponent<SpriteRenderer>();
-        Cursor.visible = !hideCursor;
         audioSource = GetComponent<AudioSource>();
         trail = GetComponent<TrailRenderer>();
 
@@ -52,18 +51,17 @@ public class PlayerController : MonoBehaviour
 #endif
     }
 
+    void Start()
+    {
+       GameManager.RegisterPlayer(this);
+    }
+
     void Update()
     {
-        // Jump if grounded or walled
-        if (Input.GetButtonDown("Jump") && (grounded || walled))
-        {
-            jump = true;
-        }
-
         // Flip sprite
-        if (Mathf.Abs(horizontalInput) > 0.01f)
+        if (Mathf.Abs(HorizontalInput) > 0.01f)
         {
-            spriteRenderer.flipX = horizontalInput < 0f;
+            spriteRenderer.flipX = HorizontalInput < 0f;
         }
 
         // Reset
@@ -75,16 +73,13 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Grab horizontal input here, to sync with physics loop
-        horizontalInput = Input.GetAxisRaw("Horizontal");
-
         // Wall/obstacle check
-        walled = Physics2D.CircleCast(rb.position + new Vector2(horizontalInput * 0.4f, 0), 0.3f, Vector2.zero, 0, groundMask.value);
+        walled = Physics2D.CircleCast(rb.position + new Vector2(HorizontalInput * 0.4f, 0), 0.3f, Vector2.zero, 0, groundMask.value);
 
         if (walled)
         {
             // Reduce horizontal input value if pushing object or against a wall
-            horizontalInput *= 0.5f;
+            HorizontalInput *= 0.5f;
 
             // Play hit sound
             var x = Mathf.Abs(velocity.x);
@@ -101,17 +96,6 @@ public class PlayerController : MonoBehaviour
 
         // Ground check
         grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.4f, 0.4f, Vector2.zero, 0, groundMask.value);
-
-        // Jump
-        if (jump && (grounded || walled))
-        {
-            // Jump vector - combine jump speed with half current vertical velocity
-            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
-
-            // Play jump sound
-            PlayAudioClip(jumpSound, rb.velocity.y);
-            jump = false;
-        }
 
         // Control and grounding
         var control = airControl;
@@ -133,7 +117,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Calculate horizontal velocity
-        velocityX = Mathf.Lerp(velocityX, horizontalInput, Time.fixedDeltaTime * control);
+        velocityX = Mathf.Lerp(velocityX, HorizontalInput, Time.fixedDeltaTime * control);
         velocity.Set(velocityX * speed, rb.velocity.y);
 
         // Update velocity
@@ -141,6 +125,15 @@ public class PlayerController : MonoBehaviour
 
         // Speed Limit
         //rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.4f, 0.4f);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position + new Vector3(HorizontalInput * 0.4f, 0f, 0), 0.3f);
     }
 
     void PlayAudioClip(AudioClip clip, float velocity)
@@ -154,12 +147,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnDrawGizmos()
+    public void Jump()
     {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.4f, 0.4f);
+        if (grounded || walled)
+        {
+            // Jump vector - combine jump speed with half current vertical velocity
+            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position + new Vector3(horizontalInput * 0.4f, 0f, 0), 0.3f);
+            // Play jump sound
+            PlayAudioClip(jumpSound, rb.velocity.y);
+        }
     }
 }

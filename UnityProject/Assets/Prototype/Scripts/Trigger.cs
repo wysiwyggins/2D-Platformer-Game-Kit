@@ -60,6 +60,10 @@ public class Trigger : MonoBehaviour
     public float volume = 1;
     public bool loop = true;
 
+    [Header("Game")]
+    [Tooltip("End game when trigger is activated.")]
+    public bool endGame;
+
     bool pauseAudio;
     AudioSource audioSource;
     WaitForSeconds wait;
@@ -87,7 +91,7 @@ public class Trigger : MonoBehaviour
     {
         if (pauseAudio)
         {
-            audioSource.volume -= Time.deltaTime; // Fade out
+            audioSource.volume -= Time.unscaledDeltaTime; // Fade out
 
             if (audioSource.volume < Mathf.Epsilon)
             {
@@ -97,9 +101,9 @@ public class Trigger : MonoBehaviour
         }
     }
 
-    IEnumerator OnTriggerEnter2D(Collider2D collision)
+    IEnumerator OnTriggerEnter2D(Collider2D collider)
     {
-        if (collision.gameObject.CompareTag("Player"))
+        if (collider.gameObject.CompareTag("Player"))
         {
             // Camera Zoom
             switch (cameraZoom)
@@ -280,13 +284,19 @@ public class Trigger : MonoBehaviour
                 }
             }
 
+            // End Game
+            if (endGame)
+            {
+                GameManager.GameOver();
+            }
+
             // Single Use
             if (singleUse)
             {
-                var collider = GetComponent<Collider2D>();
-                if (collider != null)
+                var c = GetComponent<Collider2D>();
+                if (c != null)
                 {
-                    collider.enabled = false;
+                    c.enabled = false;
                 }
             }
         }
