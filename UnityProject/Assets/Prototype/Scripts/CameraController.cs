@@ -22,6 +22,11 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
+        
+        transform.parent = null;
+       
+       
+
         var volume = GetComponent<Volume>();
         if (volume != null && volume.isGlobal)
         {
@@ -29,15 +34,20 @@ public class CameraController : MonoBehaviour
             GetComponent<Volume>().profile.TryGet(out vignette);
         }
 
-        player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (player == null)
+        {
+            var p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) { player = p.transform; }
+        }
 
         if (player != null)
         {
-            transform.parent = null;
             offset = transform.position - player.position;
             camera = GetComponent<Camera>();
             origSize = camera.orthographicSize;
             targetSize = origSize;
+            x = player.position.x;
+            y = player.position.y;
         }
     }
 
@@ -124,5 +134,14 @@ public class CameraController : MonoBehaviour
         }
 
         t = 0;
+    }
+
+    void Clock()
+    {
+        if (player == null)
+        {
+            var p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) { player = p.transform; }
+        }
     }
 }

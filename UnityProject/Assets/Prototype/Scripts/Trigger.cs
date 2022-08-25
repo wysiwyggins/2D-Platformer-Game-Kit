@@ -33,19 +33,19 @@ public class Trigger : MonoBehaviour
     public Vignette vignette;
 
     [Header("Change Object Size")]
-    public List<ResizeObject> growObjects;
-    public List<ResizeObject> shrinkObjects;
-    public List<ResizeObject> resetObjects;
+    public List<ResizeObject> objectsToGrow;
+    public List<ResizeObject> objectsToShrink;
+    public List<ResizeObject> objectsToReset;
 
     [Header("Change Object Color")]
     public Color newColor = new Color(0, 0, 0, 1);
     public bool glow;
-    public List<SpriteColor> colorObjects;
-    public List<SpriteColor> resetColor;
+    public List<SpriteColor> objectsToColor;
+    public List<SpriteColor> objectsToResetColor;
 
     [Header("Show or Hide Objects")]
-    public List<GameObject> showObjects;
-    public List<GameObject> hideObjects;
+    public List<GameObject> objectsToShow;
+    public List<GameObject> objectsToHide;
 
     [Header("Audio")]
     [Tooltip("Play a short sound effect.")]
@@ -54,7 +54,7 @@ public class Trigger : MonoBehaviour
     [Tooltip("Play music or ambient soundscape. This will pause other triggered ambient audio.")]
     public AudioClip ambientSound;
     [Tooltip("Pause ambient sounds. Only affects other audio sources.")]
-    public bool pauseAmbientSound;
+    public bool pauseOtherSounds;
 
     [Range(0f, 1f)]
     public float volume = 1;
@@ -195,65 +195,65 @@ public class Trigger : MonoBehaviour
             }
 
             // Grow Objects
-            for (var i = 0; i < growObjects.Count; i++)
+            for (var i = 0; i < objectsToGrow.Count; i++)
             {
-                if (growObjects[i] != null)
+                if (objectsToGrow[i] != null)
                 {
-                    growObjects[i].Grow();
+                    objectsToGrow[i].Grow();
                 }
             }
 
             // Shrink Objects
-            for (var i = 0; i < shrinkObjects.Count; i++)
+            for (var i = 0; i < objectsToShrink.Count; i++)
             {
-                if (shrinkObjects[i] != null)
+                if (objectsToShrink[i] != null)
                 {
-                    shrinkObjects[i].Shrink();
+                    objectsToShrink[i].Shrink();
                 }
             }
 
             // Reset Objects
-            for (var i = 0; i < resetObjects.Count; i++)
+            for (var i = 0; i < objectsToReset.Count; i++)
             {
-                if (resetObjects[i] != null)
+                if (objectsToReset[i] != null)
                 {
-                    resetObjects[i].ResetSize();
+                    objectsToReset[i].ResetSize();
                 }
             }
 
             // Show Objects
-            for (var i = 0; i < showObjects.Count; i++)
+            for (var i = 0; i < objectsToShow.Count; i++)
             {
-                if (showObjects[i] != null)
+                if (objectsToShow[i] != null)
                 {
-                    showObjects[i].SetActive(true);
+                    objectsToShow[i].SetActive(true);
                 }
             }
 
             // Hide Objects
-            for (var i = 0; i < hideObjects.Count; i++)
+            for (var i = 0; i < objectsToHide.Count; i++)
             {
-                if (hideObjects[i] != null)
+                if (objectsToHide[i] != null)
                 {
-                    hideObjects[i].SetActive(false);
+                    objectsToHide[i].SetActive(false);
                 }
             }
 
             // Color Objects
-            for (var i = 0; i < colorObjects.Count; i++)
+            for (var i = 0; i < objectsToColor.Count; i++)
             {
-                if (colorObjects[i] != null)
+                if (objectsToColor[i] != null)
                 {
-                    colorObjects[i].SetColor(newColor, glow);
+                    objectsToColor[i].SetColor(newColor, glow);
                 }
             }
 
             // Reset Color
-            for (var i = 0; i < resetColor.Count; i++)
+            for (var i = 0; i < objectsToResetColor.Count; i++)
             {
-                if (resetColor[i] != null)
+                if (objectsToResetColor[i] != null)
                 {
-                    resetColor[i].ResetColor();
+                    objectsToResetColor[i].ResetColor();
                 }
             }
 
@@ -266,7 +266,7 @@ public class Trigger : MonoBehaviour
                 audioSource.PlayOneShot(soundFX);
             }
 
-            if (ambientSound != null || pauseAmbientSound)
+            if (ambientSound != null || pauseOtherSounds)
             {
                 // Stop ambient audio on other triggers
                 foreach (var t in triggers)
@@ -353,7 +353,7 @@ public class Trigger : MonoBehaviour
             Handles.Label(position + Vector3.up * transform.localScale.y / 2, info);
 
             Gizmos.color = Color.white;
-            foreach (var o in growObjects)
+            foreach (var o in objectsToGrow)
             {
                 if (o != null)
                 {
@@ -363,7 +363,7 @@ public class Trigger : MonoBehaviour
             }
 
             Gizmos.color = Color.gray;
-            foreach (var o in shrinkObjects)
+            foreach (var o in objectsToShrink)
             {
                 if (o != null)
                 {
@@ -373,7 +373,7 @@ public class Trigger : MonoBehaviour
             }
 
             Gizmos.color = Color.black;
-            foreach (var o in resetObjects)
+            foreach (var o in objectsToReset)
             {
                 if (o != null)
                 {
@@ -383,7 +383,7 @@ public class Trigger : MonoBehaviour
             }
 
             Gizmos.color = Color.green;
-            foreach (var o in showObjects)
+            foreach (var o in objectsToShow)
             {
                 if (o != null)
                 {
@@ -393,7 +393,7 @@ public class Trigger : MonoBehaviour
             }
 
             Gizmos.color = Color.red;
-            foreach (var o in hideObjects)
+            foreach (var o in objectsToHide)
             {
                 if (o != null)
                 {
@@ -404,7 +404,7 @@ public class Trigger : MonoBehaviour
 
             Gizmos.color = newColor;
             var offset = Vector3.right * 0.25f;
-            foreach (var o in colorObjects)
+            foreach (var o in objectsToColor)
             {
                 if (o != null)
                 {

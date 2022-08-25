@@ -6,8 +6,6 @@ public class PlayerController : MonoBehaviour
 {
     public AudioClip jumpSound;
     public AudioClip bumpSound;
-    
-    public float HorizontalInput { get; set; }
 
     const float speed = 10;
     const float jumpSpeed = 25;
@@ -19,8 +17,8 @@ public class PlayerController : MonoBehaviour
     bool landToggle = true;
     bool hitToggle = true;
     LayerMask groundMask = 1;
-    float velocityX;
-    Vector2 velocity;
+    float horizontalInput, velocityX;
+    Vector2 velocity, groundCastPosition, wallCastPosition;
     RaycastHit2D grounded;
     RaycastHit2D walled;
     Rigidbody2D rb;
@@ -33,7 +31,7 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        
+
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityScale;
         mat = new PhysicsMaterial2D();
@@ -53,33 +51,31 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-       GameManager.RegisterPlayer(this);
+        GameManager.RegisterPlayer(this);
     }
 
     void Update()
     {
         // Flip sprite
-        if (Mathf.Abs(HorizontalInput) > 0.01f)
+        if (Mathf.Abs(horizontalInput) > 0.01f)
         {
-            spriteRenderer.flipX = HorizontalInput < 0f;
-        }
-
-        // Reset
-        if (transform.position.y < -50)
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            spriteRenderer.flipX = horizontalInput < 0f;
         }
     }
 
     void FixedUpdate()
     {
+        var fixedTime = Time.fixedDeltaTime;
+
         // Wall/obstacle check
-        walled = Physics2D.CircleCast(rb.position + new Vector2(HorizontalInput * 0.4f, 0), 0.3f, Vector2.zero, 0, groundMask.value);
+        wallCastPosition = Mathf.Abs(horizontalInput) < 1 ? Vector2.Lerp(wallCastPosition, rb.position + new Vector2(horizontalInput * 0.4f, 0), fixedTime * 10) : rb.position + new Vector2(horizontalInput * 0.4f, 0);
+        wallCastPosition.y = rb.position.y;
+        walled = Physics2D.CircleCast(wallCastPosition, 0.3f, Vector2.zero, 0, groundMask.value);
 
         if (walled)
         {
             // Reduce horizontal input value if pushing object or against a wall
-            HorizontalInput *= 0.5f;
+            horizontalInput *= 0.5f;
 
             // Play hit sound
             var x = Mathf.Abs(velocity.x);
@@ -95,7 +91,9 @@ public class PlayerController : MonoBehaviour
         }
 
         // Ground check
-        grounded = Physics2D.CircleCast(rb.position + Vector2.up * -0.4f, 0.4f, Vector2.zero, 0, groundMask.value);
+        groundCastPosition = Vector2.Lerp(groundCastPosition, rb.position + Vector2.up * -0.4f, fixedTime * 20);
+        groundCastPosition.y = Mathf.Min(groundCastPosition.y, rb.position.y - 0.4f);
+        grounded = Physics2D.CircleCast(groundCastPosition, 0.4f, Vector2.zero, 0, groundMask.value);
 
         // Control and grounding
         var control = airControl;
@@ -117,7 +115,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Calculate horizontal velocity
-        velocityX = Mathf.Lerp(velocityX, HorizontalInput, Time.fixedDeltaTime * control);
+        velocityX = Mathf.Lerp(velocityX, horizontalInput, fixedTime * control);
         velocity.Set(velocityX * speed, rb.velocity.y);
 
         // Update velocity
@@ -125,15 +123,6 @@ public class PlayerController : MonoBehaviour
 
         // Speed Limit
         //rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeed);
-    }
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position + Vector3.up * -0.4f, 0.4f);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position + new Vector3(HorizontalInput * 0.4f, 0f, 0), 0.3f);
     }
 
     void PlayAudioClip(AudioClip clip, float velocity)
@@ -152,10 +141,27 @@ public class PlayerController : MonoBehaviour
         if (grounded || walled)
         {
             // Jump vector - combine jump speed with half current vertical velocity
-            rb.velocity += Vector2.up * (jumpSpeed + rb.velocity.y / 2 - rb.velocity.y);
+            var velY = rb.velocity.y;
+            rb.velocity = rb.velocity * Vector2.right;
+            rb.velocity += Vector2.up * (jumpSpeed + Mathf.Max(velY / 2, 0));
+            //rb.velocity += Vector2.up * (jumpSpeed + Mathf.Max(Mathf.Pow(rb.velocity.y, 0.5f), 0));
 
             // Play jump sound
             PlayAudioClip(jumpSound, rb.velocity.y);
         }
+    }
+
+    public void HorizontalInput(float value)
+    {
+        horizontalInput = value;
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(groundCastPosition, 0.4f);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(wallCastPosition, 0.3f);
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 public class GameManager : SecureSingleton<GameManager>
 {
@@ -18,12 +19,12 @@ public class GameManager : SecureSingleton<GameManager>
     bool paused = false;
     int mode = 0; // 0:splash, 1:play, 2:end
     PlayerController playerController;
+    Transform playerTransform;
 
 
     protected override void Awake()
     {
         base.Awake();
-        DontDestroyOnLoad(gameObject);
 
         foreach (var o in enableOnStart)
         {
@@ -43,6 +44,10 @@ public class GameManager : SecureSingleton<GameManager>
 
         Time.fixedDeltaTime = 1 / 100f;
         gameOverImage.color = new Color(1, 1, 1, 0);
+        mode = 0;
+        Unpause();
+
+        InvokeRepeating(nameof(Clock), 1, 1);
     }
 
     protected override void OnDestroy()
@@ -81,18 +86,14 @@ public class GameManager : SecureSingleton<GameManager>
                 {
                     // Player input
                     if (Input.GetButtonDown("Jump")) { playerController.Jump(); }
-                    playerController.HorizontalInput = Input.GetAxisRaw("Horizontal");
+                    playerController.HorizontalInput(Input.GetAxisRaw("Horizontal"));
                 }
                 break;
 
             case 2:
-                if (Input.GetKeyDown(KeyCode.Escape))
+                if (Input.anyKeyDown)
                 {
-#if UNITY_EDITOR
-                    UnityEditor.EditorApplication.isPlaying = false;
-#else
-                    Application.Quit();
-#endif
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
                 }
                 break;
         }
@@ -120,21 +121,33 @@ public class GameManager : SecureSingleton<GameManager>
 
     void OnDrawGizmos()
     {
-        // Draw death box at -50 on y axis
+        // Draw rest box at -50 on y axis
         Gizmos.color = new Color(1, 0, 0, 0.5f);
         Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
+        
+    }
+
+    void Clock()
+    {
+        if (playerTransform != null)
+        {
+            if (playerTransform.position.y < -50)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+        }
     }
 
     public static void RegisterPlayer(PlayerController playerController)
     {
         This.playerController = playerController;
+        This.playerTransform = playerController.transform;
     }
 
     public static void GameOver()
     {
         This.mode = 2;
-        This.paused = true;
-        Time.timeScale = 0;
+        This.Pause();
         This.gameOverImage.gameObject.SetActive(true);
     }
 }
