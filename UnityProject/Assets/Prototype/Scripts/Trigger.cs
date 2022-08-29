@@ -15,7 +15,6 @@ public class Trigger : MonoBehaviour
     public enum HueShift { NONE, UP, DOWN, RESET }
     public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
     public enum Vignette { NONE, ON, RESET }
-    //public enum PostProcessingEffect { NONE, BRIGHTEN, DARKEN, HUESHIFT_UP, HUESHIFT_DOWN, DESATURATE, SUPERSATURATE, GRAYSCALE, VIGNETTE, RESET }
 
     [Header("Settings")]
     [Tooltip("Enable to deactivate trigger after one use.")]
@@ -46,6 +45,9 @@ public class Trigger : MonoBehaviour
     [Header("Show or Hide Objects")]
     public List<GameObject> objectsToShow;
     public List<GameObject> objectsToHide;
+
+    [Header("Trigger on Other Objects")]
+    public List<GameObject> triggerObjects;
 
     [Header("Audio")]
     [Tooltip("Play a short sound effect.")]
@@ -103,7 +105,19 @@ public class Trigger : MonoBehaviour
 
     IEnumerator OnTriggerEnter2D(Collider2D collider)
     {
-        if (collider.gameObject.CompareTag("Player"))
+        bool go = false;
+        var colliderObject = collider.gameObject;
+
+        for (var i = 0; i < triggerObjects.Count; i++)
+        {
+            if (triggerObjects[i] == colliderObject)
+            {
+                go = true;
+                break;
+            }
+        }
+
+        if (colliderObject.CompareTag("Player") || go)
         {
             // Camera Zoom
             switch (cameraZoom)
@@ -330,6 +344,7 @@ public class Trigger : MonoBehaviour
         if (showLinesAndLabels)
         {
             var position = transform.position;
+            var scale = transform.localScale;
 
             string info = "Trigger";
             info += "\nSingle Use: " + singleUse;
@@ -358,7 +373,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow");
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow " + o.name);
                 }
             }
 
@@ -368,7 +383,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink");
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink " + o.name);
                 }
             }
 
@@ -378,7 +393,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size");
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size " + o.name);
                 }
             }
 
@@ -388,7 +403,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show");
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show " + o.name);
                 }
             }
 
@@ -398,7 +413,17 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide");
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide " + o.name);
+                }
+            }
+
+            Gizmos.color = Color.cyan;
+            foreach (var o in triggerObjects)
+            {
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Trigger " + o.name);
                 }
             }
 
@@ -409,7 +434,17 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position + offset, position + offset);
-                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color");
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color " + o.name);
+                }
+            }
+
+            Gizmos.color = new Color(1, 0.5f, 0);
+            foreach (var o in objectsToResetColor)
+            {
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position + offset, position + offset);
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Reset Color " + o.name);
                 }
             }
         }

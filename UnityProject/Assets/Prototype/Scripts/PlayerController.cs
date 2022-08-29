@@ -28,6 +28,8 @@ public class PlayerController : MonoBehaviour
     TrailRenderer trail;
 
     Animator anim;
+    int speedHash;
+    int jumpHash;
 
     void Awake()
     {
@@ -40,6 +42,9 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         audioSource = GetComponent<AudioSource>();
         trail = GetComponent<TrailRenderer>();
+        anim = GetComponent<Animator>();
+        speedHash = Animator.StringToHash("Speed");
+        jumpHash = Animator.StringToHash("Jump");
 
 #if !UNITY_EDITOR
         if (trail != null)
@@ -56,6 +61,10 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Update Animator
+        anim.SetFloat(speedHash, Mathf.Abs(rb.velocity.x / speed));
+        anim.SetBool(jumpHash, !grounded);
+
         // Flip sprite
         if (Mathf.Abs(horizontalInput) > 0.01f)
         {
