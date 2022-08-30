@@ -25,11 +25,11 @@ public class PlayerController : MonoBehaviour
     PhysicsMaterial2D mat;
     SpriteRenderer spriteRenderer;
     AudioSource audioSource;
+    ParticleSystem particleSystem;
     TrailRenderer trail;
 
     Animator anim;
-    int speedHash;
-    int jumpHash;
+    int horizontalSpeedHash, verticalSpeedHash, jumpHash;
 
     void Awake()
     {
@@ -41,9 +41,11 @@ public class PlayerController : MonoBehaviour
         rb.sharedMaterial = mat;
         spriteRenderer = GetComponent<SpriteRenderer>();
         audioSource = GetComponent<AudioSource>();
+        particleSystem = GetComponent<ParticleSystem>();
         trail = GetComponent<TrailRenderer>();
         anim = GetComponent<Animator>();
-        speedHash = Animator.StringToHash("Speed");
+        horizontalSpeedHash = Animator.StringToHash("HorizontalSpeed");
+        verticalSpeedHash = Animator.StringToHash("VerticalSpeed");
         jumpHash = Animator.StringToHash("Jump");
 
 #if !UNITY_EDITOR
@@ -62,7 +64,8 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         // Update Animator
-        anim.SetFloat(speedHash, Mathf.Abs(rb.velocity.x / speed));
+        anim.SetFloat(horizontalSpeedHash, Mathf.Abs(rb.velocity.x / speed));
+        anim.SetFloat(verticalSpeedHash, Mathf.Abs(rb.velocity.y / jumpSpeed));
         anim.SetBool(jumpHash, !grounded);
 
         // Flip sprite
@@ -77,7 +80,7 @@ public class PlayerController : MonoBehaviour
         var fixedTime = Time.fixedDeltaTime;
 
         // Wall/obstacle check
-        wallCastPosition = Mathf.Abs(horizontalInput) < 1 ? Vector2.Lerp(wallCastPosition, rb.position + new Vector2(horizontalInput * 0.4f, 0), fixedTime * 10) : rb.position + new Vector2(horizontalInput * 0.4f, 0);
+        wallCastPosition = Mathf.Abs(horizontalInput) < 1 ? Vector2.Lerp(wallCastPosition, rb.position + new Vector2(horizontalInput * 0.4f, 0), fixedTime * 20) : rb.position + new Vector2(horizontalInput * 0.4f, 0);
         wallCastPosition.y = rb.position.y;
         walled = Physics2D.CircleCast(wallCastPosition, 0.3f, Vector2.zero, 0, groundMask.value);
 
@@ -115,6 +118,7 @@ public class PlayerController : MonoBehaviour
             if (landToggle && y > 10)
             {
                 PlayAudioClip(bumpSound, y);
+                particleSystem.Emit(5);
             }
             landToggle = false;
         }

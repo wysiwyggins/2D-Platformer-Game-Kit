@@ -17,7 +17,7 @@ public class Trigger : MonoBehaviour
     public enum Vignette { NONE, ON, RESET }
 
     [Header("Settings")]
-    [Tooltip("Enable to deactivate trigger after one use.")]
+    [Tooltip("Enable Single Use to deactivate trigger after one use.")]
     public bool singleUse = false;
     public bool showLinesAndLabels = true;
     public bool hideInGame = true;
@@ -46,8 +46,12 @@ public class Trigger : MonoBehaviour
     public List<GameObject> objectsToShow;
     public List<GameObject> objectsToHide;
 
-    [Header("Trigger on Other Objects")]
-    public List<GameObject> triggerObjects;
+    [Header("Enable or Disable Physics")]
+    public List<Rigidbody2D> objectsToEnablePhysics;
+    public List<Rigidbody2D> objectsToDisablePhysics;
+
+    [Header("Activate Trigger with Objects")]
+    public List<GameObject> objectsToActivateTrigger;
 
     [Header("Audio")]
     [Tooltip("Play a short sound effect.")]
@@ -108,9 +112,9 @@ public class Trigger : MonoBehaviour
         bool go = false;
         var colliderObject = collider.gameObject;
 
-        for (var i = 0; i < triggerObjects.Count; i++)
+        for (var i = 0; i < objectsToActivateTrigger.Count; i++)
         {
-            if (triggerObjects[i] == colliderObject)
+            if (objectsToActivateTrigger[i] == colliderObject)
             {
                 go = true;
                 break;
@@ -253,6 +257,23 @@ public class Trigger : MonoBehaviour
                 }
             }
 
+            // Physics
+            for (var i = 0; i < objectsToEnablePhysics.Count; i++)
+            {
+                if (objectsToEnablePhysics[i] != null)
+                {
+                    objectsToEnablePhysics[i].isKinematic = false;
+                }
+            }
+
+            for (var i = 0; i < objectsToDisablePhysics.Count; i++)
+            {
+                if (objectsToDisablePhysics[i] != null)
+                {
+                    objectsToDisablePhysics[i].isKinematic = true;
+                }
+            }
+
             // Color Objects
             for (var i = 0; i < objectsToColor.Count; i++)
             {
@@ -373,7 +394,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Grow " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Grow: " + o.name);
                 }
             }
 
@@ -383,7 +404,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Shrink " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Shrink: " + o.name);
                 }
             }
 
@@ -393,7 +414,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Reset Size " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Reset Size: " + o.name);
                 }
             }
 
@@ -403,7 +424,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Show " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Show: " + o.name);
                 }
             }
 
@@ -413,17 +434,38 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Hide " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Hide: " + o.name);
                 }
             }
 
-            Gizmos.color = Color.cyan;
-            foreach (var o in triggerObjects)
+            Gizmos.color = Color.yellow;
+            foreach (var o in objectsToEnablePhysics)
             {
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.55f), "Trigger " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Enable Physics: " + o.name);
+                }
+            }
+
+            Gizmos.color = Color.blue;
+            foreach (var o in objectsToDisablePhysics)
+            {
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Disable Physics: " + o.name);
+                }
+            }
+
+
+            Gizmos.color = Color.cyan;
+            foreach (var o in objectsToActivateTrigger)
+            {
+                if (o != null)
+                {
+                    Gizmos.DrawLine(o.transform.position, position);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Trigger: " + o.name);
                 }
             }
 
@@ -434,7 +476,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position + offset, position + offset);
-                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Color " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.4f), "Color: " + o.name);
                 }
             }
 
@@ -444,7 +486,7 @@ public class Trigger : MonoBehaviour
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position + offset, position + offset);
-                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.45f), "Reset Color " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position + offset, position + offset, 0.4f), "Reset Color: " + o.name);
                 }
             }
         }
