@@ -17,5 +17,6 @@ This is a starter project and kit created for teaching forward game design (foll
   - post processing effects
   - ending a level
 - A basic game manager with modes and input filtering (for simple title/game over screen)
+- Works with all collider types (sprite, primitive, tilemap, spriteshape)
 
 ![Alt text](Images/Screenshot.png?raw=true "Screenshot")
