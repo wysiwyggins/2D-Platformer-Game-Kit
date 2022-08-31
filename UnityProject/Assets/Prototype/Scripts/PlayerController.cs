@@ -27,7 +27,7 @@ public class PlayerController : MonoBehaviour
     PhysicsMaterial2D mat;
     SpriteRenderer spriteRenderer;
     AudioSource audioSource;
-    ParticleSystem particleSystem;
+    ParticleSystem particle;
     TrailRenderer trail;
     RaycastHit2D[] hits = new RaycastHit2D[1];
     ContactFilter2D filter = new ContactFilter2D();
@@ -45,7 +45,7 @@ public class PlayerController : MonoBehaviour
         rb.sharedMaterial = mat;
         spriteRenderer = GetComponent<SpriteRenderer>();
         audioSource = GetComponent<AudioSource>();
-        particleSystem = GetComponent<ParticleSystem>();
+        particle = GetComponent<ParticleSystem>();
         trail = GetComponent<TrailRenderer>();
         anim = GetComponent<Animator>();
         horizontalSpeedHash = Animator.StringToHash("HorizontalSpeed");
@@ -125,7 +125,7 @@ public class PlayerController : MonoBehaviour
             if (landToggle && y > 10)
             {
                 PlayAudioClip(bumpSound, y);
-                particleSystem.Emit(5);
+                particle.Emit(5);
             }
             landToggle = false;
         }
