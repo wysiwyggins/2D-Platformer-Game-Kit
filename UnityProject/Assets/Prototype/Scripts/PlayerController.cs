@@ -19,21 +19,25 @@ public class PlayerController : MonoBehaviour
     LayerMask groundMask = 1;
     float horizontalInput, velocityX;
     Vector2 velocity, groundCastPosition, wallCastPosition;
+    Vector3 lastPosition;
     RaycastHit2D grounded;
     RaycastHit2D walled;
     Rigidbody2D rb;
+    Collider2D coll;
     PhysicsMaterial2D mat;
     SpriteRenderer spriteRenderer;
     AudioSource audioSource;
     ParticleSystem particleSystem;
     TrailRenderer trail;
+    RaycastHit2D[] hits = new RaycastHit2D[1];
+    ContactFilter2D filter = new ContactFilter2D();
 
     Animator anim;
     int horizontalSpeedHash, verticalSpeedHash, jumpHash;
 
     void Awake()
     {
-
+        coll = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityScale;
         mat = new PhysicsMaterial2D();
@@ -47,6 +51,7 @@ public class PlayerController : MonoBehaviour
         horizontalSpeedHash = Animator.StringToHash("HorizontalSpeed");
         verticalSpeedHash = Animator.StringToHash("VerticalSpeed");
         jumpHash = Animator.StringToHash("Jump");
+        filter.useTriggers = true;
 
 #if !UNITY_EDITOR
         if (trail != null)
@@ -59,6 +64,8 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         GameManager.RegisterPlayer(this);
+        InvokeRepeating(nameof(Clock), 2, 2);
+        lastPosition = rb.position;
     }
 
     void Update()
@@ -149,6 +156,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    void Clock()
+    {
+        if (coll.Raycast(Vector2.down, filter, hits, 5) > 0)
+        {
+            lastPosition = hits[0].point + Vector2.up * 0.5f;
+        }
+    }
+
     public void Jump()
     {
         if (grounded || walled)
@@ -167,6 +182,22 @@ public class PlayerController : MonoBehaviour
     public void HorizontalInput(float value)
     {
         horizontalInput = value;
+    }
+
+    public void ResetPosition()
+    {
+        rb.velocity = Vector2.zero;
+        transform.position = lastPosition + Vector3.up;
+    }
+
+    void OnDestroy()
+    {
+        CancelInvoke();
+    }
+
+    void OnDisable()
+    {
+        CancelInvoke();
     }
 
     void OnDrawGizmos()

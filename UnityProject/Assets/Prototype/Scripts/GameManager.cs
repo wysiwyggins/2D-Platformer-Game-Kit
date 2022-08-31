@@ -21,7 +21,6 @@ public class GameManager : SecureSingleton<GameManager>
     PlayerController playerController;
     Transform playerTransform;
 
-
     protected override void Awake()
     {
         base.Awake();
@@ -42,12 +41,14 @@ public class GameManager : SecureSingleton<GameManager>
             }
         }
 
+
+
         Time.fixedDeltaTime = 1 / 100f;
         gameOverImage.color = new Color(1, 1, 1, 0);
         mode = 0;
         Unpause();
 
-        InvokeRepeating(nameof(Clock), 1, 1);
+        InvokeRepeating(nameof(Clock1), 1, 1);
     }
 
     protected override void OnDestroy()
@@ -113,27 +114,14 @@ public class GameManager : SecureSingleton<GameManager>
         onUnpause.Invoke();
     }
 
-    void OnValidate()
-    {
-        enableOnStart.RemoveAll(x => x == null);
-        disableOnStart.RemoveAll(x => x == null);
-    }
-
-    void OnDrawGizmos()
-    {
-        // Draw rest box at -50 on y axis
-        Gizmos.color = new Color(1, 0, 0, 0.5f);
-        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
-        
-    }
-
-    void Clock()
+    void Clock1()
     {
         if (playerTransform != null)
         {
             if (playerTransform.position.y < -50)
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                playerController.ResetPosition();
+                //SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
     }
@@ -149,5 +137,19 @@ public class GameManager : SecureSingleton<GameManager>
         This.mode = 2;
         This.Pause();
         This.gameOverImage.gameObject.SetActive(true);
+    }
+
+    void OnValidate()
+    {
+        enableOnStart.RemoveAll(x => x == null);
+        disableOnStart.RemoveAll(x => x == null);
+    }
+
+    void OnDrawGizmos()
+    {
+        // Draw rest box at -50 on y axis
+        Gizmos.color = new Color(1, 0, 0, 0.5f);
+        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
+
     }
 }
