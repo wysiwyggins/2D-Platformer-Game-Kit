@@ -160,7 +160,7 @@ public class PlayerController : MonoBehaviour
     {
         if (coll.Raycast(Vector2.down, filter, hits, 5) > 0)
         {
-            lastPosition = hits[0].point + Vector2.up * 0.5f;
+            lastPosition = hits[0].point;
         }
     }
 
@@ -187,7 +187,7 @@ public class PlayerController : MonoBehaviour
     public void ResetPosition()
     {
         rb.velocity = Vector2.zero;
-        transform.position = lastPosition + Vector3.up;
+        transform.position = lastPosition + Vector3.up * 0.25f;
     }
 
     void OnDestroy()

@@ -88,6 +88,7 @@ public class GameManager : SecureSingleton<GameManager>
                     // Player input
                     if (Input.GetButtonDown("Jump")) { playerController.Jump(); }
                     playerController.HorizontalInput(Input.GetAxisRaw("Horizontal"));
+                    if (Input.GetKeyDown(KeyCode.R)) { SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
                 }
                 break;
 
