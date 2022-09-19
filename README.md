@@ -1,7 +1,7 @@
 # 2D Platformer Game Kit
 A Unity Project
 
-UPDATE: Requires Unity version 2021.3.6f1
+NOTE: Requires Unity version 2021.3.6f1
 
 This is a starter project and kit created for teaching forward game design (follow the fun) and principles of interactivity to students in the Arts and Entertainment Technologies program at the University of Texas in Austin. Based on a tight and smooth 2D platformer, this project features:
 - High frequency physics for solid and responsive game feel
