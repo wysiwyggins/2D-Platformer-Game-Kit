@@ -51,6 +51,7 @@ public class Trigger : MonoBehaviour
     public List<Rigidbody2D> objectsToDisablePhysics;
 
     [Header("Activate Trigger with Objects")]
+    public bool ignorePlayer;
     public List<GameObject> objectsToActivateTrigger;
 
     [Header("Audio")]
@@ -121,7 +122,7 @@ public class Trigger : MonoBehaviour
             }
         }
 
-        if (colliderObject.CompareTag("Player") || go)
+        if ((colliderObject.CompareTag("Player") && !ignorePlayer) || go)
         {
             // Camera Zoom
             switch (cameraZoom)
