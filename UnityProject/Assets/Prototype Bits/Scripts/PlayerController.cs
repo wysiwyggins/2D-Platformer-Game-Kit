@@ -7,15 +7,23 @@ public class PlayerController : MonoBehaviour
     public AudioClip jumpSound;
     public AudioClip bumpSound;
 
-    const float speed = 10;
-    const float jumpSpeed = 25;
-    const float gravityScale = 8;
-    const float airControl = 3;
-    const float groundControl = 10;
-    const float maxSpeed = 30;
+    [Header("Movement Properties")]
+    [Range(1, 40)]
+    public float speed = 10;
+    [Range(1, 60)]
+    public float jumpSpeed = 25;
+    [Range(1, 20)]
+    public float gravityScale = 8;
+    [Range(1, 20)]
+    public float airControl = 3;
+    [Range(1, 20)]
+    public float groundControl = 10;
+    [Range(1, 100)]
+    public float maxSpeed = 30;
 
-    bool landToggle = true;
-    bool hitToggle = true;
+    private bool landToggle = true;
+    private bool hitToggle = true;
+
     LayerMask groundMask = 1;
     float horizontalInput, velocityX;
     Vector2 velocity, groundCastPosition, wallCastPosition;
@@ -34,6 +42,25 @@ public class PlayerController : MonoBehaviour
 
     Animator anim;
     int horizontalSpeedHash, verticalSpeedHash, jumpHash;
+
+    public void SaveDefaultValues()
+    {
+        PlayerPrefs.SetFloat("DefaultSpeed", speed);
+        PlayerPrefs.SetFloat("DefaultJumpSpeed", jumpSpeed);
+        PlayerPrefs.SetFloat("DefaultGravityScale", gravityScale);
+        PlayerPrefs.SetFloat("DefaultAirControl", airControl);
+        PlayerPrefs.SetFloat("DefaultGroundControl", groundControl);
+        PlayerPrefs.SetFloat("DefaultMaxSpeed", maxSpeed);
+    }
+    public void LoadDefaultValues()
+    {
+        speed = PlayerPrefs.GetFloat("DefaultSpeed", speed);
+        jumpSpeed = PlayerPrefs.GetFloat("DefaultJumpSpeed", jumpSpeed);
+        gravityScale = PlayerPrefs.GetFloat("DefaultGravityScale", gravityScale);
+        airControl = PlayerPrefs.GetFloat("DefaultAirControl", airControl);
+        groundControl = PlayerPrefs.GetFloat("DefaultGroundControl", groundControl);
+        maxSpeed = PlayerPrefs.GetFloat("DefaultMaxSpeed", maxSpeed);
+    }
 
     void Awake()
     {
@@ -84,6 +111,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        rb.gravityScale = gravityScale;
         var fixedTime = Time.fixedDeltaTime;
 
         // Wall/obstacle check
