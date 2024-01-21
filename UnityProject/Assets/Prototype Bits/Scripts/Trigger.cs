@@ -8,13 +8,20 @@ using UnityEditor;
 [RequireComponent(typeof(AudioSource), typeof(Collider2D))]
 public class Trigger : MonoBehaviour
 {
-    static List<Trigger> triggers = new List<Trigger>();
+    [HideInInspector]public static List<Trigger> triggers = new List<Trigger>();
+    [HideInInspector]public static List<Trigger> triggerCheckpoints = new List<Trigger>();
 
     public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM }
     public enum Exposure { NONE, BRIGHTEN, DARKEN, RESET }
     public enum HueShift { NONE, UP, DOWN, RESET }
     public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
     public enum Vignette { NONE, ON, RESET }
+
+    [Header("Trigger Type Setting (mutually exclusive)")]
+    [Tooltip("If toggled, resets the player's position when activated")]
+    public bool isDeathTrigger = false;
+    [Tooltip("If toggled, sets the trigger to the player's last checkpoint when activated")]
+    public bool isCheckpoint = false;
 
     [Header("Settings")]
     [Tooltip("Enable Single Use to deactivate trigger after one use.")]
@@ -86,9 +93,26 @@ public class Trigger : MonoBehaviour
             triggers.Add(this);
         }
 
+        // Register trigger as a checkpoint if set
+        if (isCheckpoint && !triggerCheckpoints.Contains(this))
+        {
+            triggerCheckpoints.Add(this);
+        }
+
         if (hideInGame)
         {
             GetComponent<SpriteRenderer>().enabled = false;
+        }
+
+        //ensures the trigger cannot be a checkpoint and a death trigger at the same time
+        if (isCheckpoint)
+        {
+            isDeathTrigger = false;
+        }
+
+        if(isDeathTrigger)
+        {
+            isCheckpoint = false;
         }
 
         wait = new WaitForSeconds(0.1f);
@@ -124,6 +148,18 @@ public class Trigger : MonoBehaviour
 
         if ((colliderObject.CompareTag("Player") && !ignorePlayer) || go)
         {
+
+            if (isCheckpoint) //updates player's last position if checkpoint is crossed
+            {
+                GameManager.SetCheckpoint(triggerCheckpoints.IndexOf(this));
+            }
+
+            if(isDeathTrigger)
+            {
+                GameManager.ResetLevel();
+            }
+
+
             // Camera Zoom
             switch (cameraZoom)
             {

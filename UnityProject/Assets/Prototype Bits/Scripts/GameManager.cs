@@ -13,6 +13,9 @@ public class GameManager : SecureSingleton<GameManager>
     [SerializeField] UnityEvent onPause;
     [SerializeField] UnityEvent onUnpause;
 
+    [Tooltip("If the player falls below this y-value, their position will be reset to the last checkpoint (or the beginning of the level if the player has not reached a checkpoint)")]
+    public float deathHeight = -50f;
+
     public Image splashImage;
     public Image gameOverImage;
 
@@ -20,6 +23,8 @@ public class GameManager : SecureSingleton<GameManager>
     int mode = 0; // 0:splash, 1:play, 2:end
     PlayerController playerController;
     Transform playerTransform;
+
+    private int checkpointIndex = -1; //index to determine which checkpoint is active
 
     protected override void Awake()
     {
@@ -121,7 +126,7 @@ public class GameManager : SecureSingleton<GameManager>
         {
             if (playerTransform.position.y < -50)
             {
-                playerController.ResetPosition();
+                ResetLevel();
                 //SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
@@ -131,6 +136,17 @@ public class GameManager : SecureSingleton<GameManager>
     {
         This.playerController = playerController;
         This.playerTransform = playerController.transform;
+    }
+
+    public static void ResetLevel()
+    {
+        This.playerController.ResetPosition();
+    }
+
+    public static void SetCheckpoint(int index)
+    {
+        This.playerController.SetCheckpoint();
+        This.checkpointIndex = index;
     }
 
     public static void GameOver()
@@ -148,9 +164,9 @@ public class GameManager : SecureSingleton<GameManager>
 
     void OnDrawGizmos()
     {
-        // Draw rest box at -50 on y axis
+        // Draw line at deathHeight
         Gizmos.color = new Color(1, 0, 0, 0.5f);
-        Gizmos.DrawCube(new Vector3(0, -300, 0), new Vector3(5000, 500, 0));
+        Gizmos.DrawLine(new Vector3(-5000, deathHeight, 0), new Vector3(5000, deathHeight, 0));
 
     }
 }

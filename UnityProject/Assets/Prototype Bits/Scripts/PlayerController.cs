@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
     ParticleSystem particle;
     TrailRenderer trail;
     RaycastHit2D[] hits = new RaycastHit2D[1];
-    ContactFilter2D filter = new ContactFilter2D();
+    //ContactFilter2D filter = new ContactFilter2D();
 
     Animator anim;
     int horizontalSpeedHash, verticalSpeedHash, jumpHash;
@@ -78,7 +78,7 @@ public class PlayerController : MonoBehaviour
         horizontalSpeedHash = Animator.StringToHash("HorizontalSpeed");
         verticalSpeedHash = Animator.StringToHash("VerticalSpeed");
         jumpHash = Animator.StringToHash("Jump");
-        filter.useTriggers = true;
+        //filter.useTriggers = true;
 
 #if !UNITY_EDITOR
         if (trail != null)
@@ -91,7 +91,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         GameManager.RegisterPlayer(this);
-        InvokeRepeating(nameof(Clock), 2, 2);
+        //InvokeRepeating(nameof(Clock), 2, 2);
         lastPosition = rb.position;
     }
 
@@ -184,13 +184,13 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void Clock()
-    {
-        if (coll.Raycast(Vector2.down, filter, hits, 5) > 0)
-        {
-            lastPosition = hits[0].point;
-        }
-    }
+    // void Clock()
+    // {
+    //     if (coll.Raycast(Vector2.down, filter, hits, 5) > 0)
+    //     {
+    //         lastPosition = hits[0].point;
+    //     }
+    // }
 
     public void Jump()
     {
@@ -210,6 +210,11 @@ public class PlayerController : MonoBehaviour
     public void HorizontalInput(float value)
     {
         horizontalInput = value;
+    }
+
+    public void SetCheckpoint()
+    {
+        lastPosition = transform.position;
     }
 
     public void ResetPosition()
