@@ -1,16 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class TransformObject : MonoBehaviour
 {
 
-    public bool isConstantlyMoving = false;
+    public float transformDuration = 0;
     public List<Vector3> movePath;
     int movePathIndex = 0;
+    public List<Quaternion> rotatePath;
+    int rotatePathIndex = 0;
+    public List<Vector3> scalePath;
+    int scalePathIndex = 0;
 
-    float origTransformDuration;
-    public float transformDuration = 0;
+    bool isMoving = false;
+    bool isRotating = false;
+    bool isScaling = false;
+
 
 
     // Vector3 origScale;
@@ -34,42 +43,93 @@ public class TransformObject : MonoBehaviour
         //origRot = Quaternion.Euler(0f, 0f, rb.rotation);
         //origPosition = rb.position;
 
-        if(isConstantlyMoving)
-        {
-            StartCoroutine(MoveConstantly());
-        }
+        movePath.Insert(0, transform.position);
+        rotatePath.Insert(0, transform.rotation);
+        scalePath.Insert(0, transform.localScale);
+
 
     }
-
 
     void FixedUpdate()
     {
-        
+        if(movePath.Count > 1)
+        {
+            if(!isMoving)
+            {
+                movePathIndex = (movePathIndex + 1) % movePath.Count;
+                StartCoroutine(Move(movePath[movePathIndex], transformDuration));
+            }
+        }
+        if(rotatePath.Count > 1)
+        {
+            if(!isRotating)
+            {       
+                rotatePathIndex = (rotatePathIndex + 1) % rotatePath.Count;
+                StartCoroutine(Rotate(rotatePath[rotatePathIndex], transformDuration));
+            }
+        }
+        if(scalePath.Count > 1)
+        {
+            if(!isScaling)
+            {
+                scalePathIndex = (scalePathIndex + 1) % scalePath.Count;
+                StartCoroutine(Scale(scalePath[scalePathIndex], transformDuration));
+            }
+        }
     }
 
-    
-    public IEnumerator MoveConstantly()
+
+
+    public IEnumerator Move(Vector3 targetPosition, float duration)
     {
-        movePathIndex = (movePathIndex + 1) % movePath.Count;
+        isMoving = true;
+        float elapsedTime = 0f;
+        Vector3 startingPosition = transform.position;
 
-        yield return null;
+        while (elapsedTime < duration)
+        {
+            transform.position = Vector3.Lerp(startingPosition, targetPosition, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = targetPosition;
+        isMoving = false;
     }
 
-    public IEnumerator Move(Vector3 targetPosition)
+    public IEnumerator Rotate(Quaternion targetRotation, float duration)
     {
-        yield return null;
+        isRotating = true;
+        float elapsedTime = 0f;
+        Quaternion startingRotation = transform.rotation;
+
+        while (elapsedTime < duration)
+        {
+            transform.rotation = Quaternion.Lerp(startingRotation, targetRotation, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.rotation = targetRotation;
+        isRotating = false;
     }
 
-    public IEnumerator Rotate(Quaternion targetRotation)
+    public IEnumerator Scale(Vector3 targetScale, float duration)
     {
-        yield return null;
-    }
+        isScaling = true;
+        float elapsedTime = 0f;
+        Vector3 startingScale = transform.localScale;
 
-    public IEnumerator Scale(Vector3 targetScale)
-    {
-        yield return null;
-    }
+        while (elapsedTime < duration)
+        {
+            transform.localScale = Vector3.Lerp(startingScale, targetScale, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
 
+        transform.localScale = targetScale;
+        isScaling = false;
+    }
 
 
     // public void SetMoveTarget(Vector3 target)
@@ -86,7 +146,21 @@ public class TransformObject : MonoBehaviour
     // {
     //     targetScale = target;
     // }
+    
 
+    #if UNITY_EDITOR
 
+        void OnDrawGizmos()
+        {
+            Gizmos.color = Color.blue;
+            foreach(var i in movePath)
+            {
+                //Gizmos.DrawWireCube(movePath[i], Vector3.one);
+            }
+        }
+
+    #endif
 
 }
+
+
