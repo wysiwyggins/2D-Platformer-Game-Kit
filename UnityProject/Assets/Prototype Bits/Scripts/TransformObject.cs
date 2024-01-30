@@ -8,43 +8,42 @@ using UnityEditor;
 public class TransformObject : MonoBehaviour
 {
 
+
+    public enum TransformPathType {LINEAR, PINGPONG}
+    [Tooltip("Determines the type of continuous movement. LINEAR moves only forwards through the list, PINGPONG moves forwards then backwards.")]
+    public TransformPathType transformPathType;
+
+    [Tooltip("The amount of time each transformation takes")]
     public float transformDuration = 0;
-    public List<Vector3> movePath;
+    [Tooltip("Moves continuously through starting position and the elements in the list")]
+    public List<Vector3> movePath = new List<Vector3>();
     int movePathIndex = 0;
-    public List<Quaternion> rotatePath;
+    [Tooltip("Rotates continuously through starting position and the elements in the list")]
+    public List<float> rotatePath = new List<float>();
     int rotatePathIndex = 0;
-    public List<Vector3> scalePath;
+    [Tooltip("Changes object's scale continuously through starting position and the elements in the list")]
+    public List<Vector3> scalePath = new List<Vector3>();
     int scalePathIndex = 0;
 
-    bool isMoving = false;
-    bool isRotating = false;
-    bool isScaling = false;
 
+    Coroutine activeMoveCoroutine = null;
+    Coroutine activeRotateCoroutine = null;
+    Coroutine activeScaleCoroutine = null;
 
-
-    // Vector3 origScale;
-    // Vector3 targetScale;
-    // Quaternion origRotation;
-    // Quaternion targetRotation;
-    // Vector3 origPosition;
-    // Vector3 targetPosition;
 
 
     private Rigidbody2D rb;
-    private bool rbOrigKinematic = true; //if object is originally kinematic, true by default
+    private bool isOrigKinematic = true; //if object is originally kinematic, true by default
 
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>(); //gets object's Rigidbody component if it has one
-        rbOrigKinematic = rb.isKinematic; //store original rb value
+        isOrigKinematic = rb.isKinematic; //store original rb value
 
-        //origScale = transform.localScale;
-        //origRot = Quaternion.Euler(0f, 0f, rb.rotation);
-        //origPosition = rb.position;
 
         movePath.Insert(0, transform.position);
-        rotatePath.Insert(0, transform.rotation);
+        rotatePath.Insert(0, transform.rotation.eulerAngles.z);
         scalePath.Insert(0, transform.localScale);
 
 
@@ -54,35 +53,39 @@ public class TransformObject : MonoBehaviour
     {
         if(movePath.Count > 1)
         {
-            if(!isMoving)
+            if(activeMoveCoroutine == null)
             {
-                movePathIndex = (movePathIndex + 1) % movePath.Count;
-                StartCoroutine(Move(movePath[movePathIndex], transformDuration));
+                movePathIndex = DetermineIndex(movePathIndex, movePath);
+                activeMoveCoroutine = StartCoroutine(Move(movePath[movePathIndex], transformDuration));
             }
         }
         if(rotatePath.Count > 1)
         {
-            if(!isRotating)
-            {       
-                rotatePathIndex = (rotatePathIndex + 1) % rotatePath.Count;
-                StartCoroutine(Rotate(rotatePath[rotatePathIndex], transformDuration));
+            if(activeRotateCoroutine == null)
+            {
+                rotatePathIndex = DetermineIndex(rotatePathIndex, rotatePath);
+                activeRotateCoroutine = StartCoroutine(Rotate(rotatePath[rotatePathIndex], transformDuration));
             }
         }
         if(scalePath.Count > 1)
         {
-            if(!isScaling)
+            if(activeScaleCoroutine == null)
             {
-                scalePathIndex = (scalePathIndex + 1) % scalePath.Count;
-                StartCoroutine(Scale(scalePath[scalePathIndex], transformDuration));
+                scalePathIndex = DetermineIndex(scalePathIndex, scalePath);
+                activeScaleCoroutine = StartCoroutine(Scale(scalePath[scalePathIndex], transformDuration));
             }
         }
     }
 
 
 
-    public IEnumerator Move(Vector3 targetPosition, float duration)
+    private IEnumerator Move(Vector3 targetPosition, float duration)
     {
-        isMoving = true;
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = true;
+        }
+
         float elapsedTime = 0f;
         Vector3 startingPosition = transform.position;
 
@@ -94,12 +97,23 @@ public class TransformObject : MonoBehaviour
         }
 
         transform.position = targetPosition;
-        isMoving = false;
+
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = false;
+        }
+
+        activeMoveCoroutine = null;
     }
 
-    public IEnumerator Rotate(Quaternion targetRotation, float duration)
+    private IEnumerator Rotate(float targetRotationDegrees, float duration)
     {
-        isRotating = true;
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = true;
+        }
+
+        Quaternion targetRotation = Quaternion.Euler(0f, 0f, targetRotationDegrees);
         float elapsedTime = 0f;
         Quaternion startingRotation = transform.rotation;
 
@@ -111,12 +125,22 @@ public class TransformObject : MonoBehaviour
         }
 
         transform.rotation = targetRotation;
-        isRotating = false;
+
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = false;
+        }
+
+        activeRotateCoroutine = null;
     }
 
-    public IEnumerator Scale(Vector3 targetScale, float duration)
+    private IEnumerator Scale(Vector3 targetScale, float duration)
     {
-        isScaling = true;
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = true;
+        }
+
         float elapsedTime = 0f;
         Vector3 startingScale = transform.localScale;
 
@@ -128,35 +152,135 @@ public class TransformObject : MonoBehaviour
         }
 
         transform.localScale = targetScale;
-        isScaling = false;
+
+        if(!isOrigKinematic)
+        {
+            rb.isKinematic = false;
+        }
+
+        activeScaleCoroutine = null;
+        //Debug.Log("scaling finished! Scaled to "+targetScale);
     }
 
 
-    // public void SetMoveTarget(Vector3 target)
-    // {
-    //     targetPosition = target;
-    // }
 
-    // public void SetRotateTarget(Quaternion target)
-    // {
-    //     targetRotation = target;
-    // }
+    //Public methods that start the Move, Scale and Rotate Coroutines and stop them if the object is already moving.
+    public void StartMove(Vector3 targetPosition, float duration)
+    {
+        if(activeMoveCoroutine != null)
+        {
+            StopCoroutine(activeMoveCoroutine);
+        }
 
-    // public void SetScaleTarget(Vector3 target)
-    // {
-    //     targetScale = target;
-    // }
+        activeMoveCoroutine = StartCoroutine(Move(targetPosition, duration));
+    }
+
+    public void StartRotate(float targetRotation, float duration)
+    {
+        if(activeRotateCoroutine != null)
+        {
+            StopCoroutine(activeRotateCoroutine);
+        }
+
+        activeRotateCoroutine = StartCoroutine(Rotate(targetRotation, duration));
+    }
+
+    public void StartScale(Vector3 targetScale, float duration)
+    {
+        if(activeScaleCoroutine != null)
+        {
+            StopCoroutine(activeScaleCoroutine);
+        }
+
+        activeScaleCoroutine = StartCoroutine(Scale(targetScale, duration));
+    }
+
+    public void Reset(float duration)
+    {
+        StartMove(movePath[0], duration);
+        StartRotate(rotatePath[0], duration);
+        StartScale(scalePath[0], duration);
+    }
+
+
+
+
+    //overloading DetermineIndex for movement and scale
+    int DetermineIndex(int currentIndex, List<Vector3> aList)
+    {
+        switch(transformPathType)
+        {
+            case TransformPathType.LINEAR:
+                return (currentIndex + 1) % aList.Count;
+            
+            case TransformPathType.PINGPONG:
+                return Mathf.RoundToInt(Mathf.PingPong(Time.time, aList.Count - 1));
+        }
+        
+        return 0;
+    }
+
+    //overloading DetermineIndex for rotation
+    int DetermineIndex(int currentIndex, List<float> aList)
+    {
+        switch(transformPathType)
+        {
+            case TransformPathType.LINEAR:
+                return (currentIndex + 1) % aList.Count;
+            
+            case TransformPathType.PINGPONG:
+                return Mathf.RoundToInt(Mathf.PingPong(Time.time, aList.Count - 1));
+        }
+        
+        return 0;
+    }
     
 
     #if UNITY_EDITOR
 
         void OnDrawGizmos()
         {
-            Gizmos.color = Color.blue;
-            foreach(var i in movePath)
+            string info = "";
+
+            Gizmos.color = Color.green;
+            Handles.color = Color.green;
+            if(movePath.Count > 0)
             {
-                //Gizmos.DrawWireCube(movePath[i], Vector3.one);
+                for(int i = 0; i < movePath.Count; i++)
+                {
+                    Gizmos.DrawWireCube(movePath[i], Vector3.one);
+                    Handles.Label(movePath[i], ""+i);
+                }
             }
+
+            Handles.color = Color.white;
+            if(rotatePath.Count > 0)
+            {
+                info += "Rotate Path: ";
+                for(int i = 0; i < rotatePath.Count; i++)
+                {
+                    if(i == rotatePath.Count - 1)
+                    {
+                        info += rotatePath[i] + "";
+                    }
+                    else
+                    {
+                        info += rotatePath[i] + ", ";
+                    }
+                }
+            }
+
+            if(scalePath.Count > 0)
+            {
+                info += "\nScale Path: ";
+                foreach(var scale in scalePath)
+                {
+                    info += scale.ToString() + "\n\t      ";
+                }
+            }
+
+            Handles.Label(transform.position + Vector3.up * transform.localScale.y / 2, info);
+
         }
 
     #endif
