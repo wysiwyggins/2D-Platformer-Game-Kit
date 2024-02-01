@@ -33,6 +33,7 @@ public class PlayerController : MonoBehaviour
     Rigidbody2D rb;
     Collider2D coll;
     PhysicsMaterial2D mat;
+    Transform sprite;
     SpriteRenderer spriteRenderer;
     AudioSource audioSource;
     ParticleSystem particle;
@@ -70,11 +71,12 @@ public class PlayerController : MonoBehaviour
         mat = new PhysicsMaterial2D();
         mat.friction = 0;
         rb.sharedMaterial = mat;
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        sprite = transform.Find("Sprite");
+        spriteRenderer = sprite.GetComponent<SpriteRenderer>();
         audioSource = GetComponent<AudioSource>();
         particle = GetComponent<ParticleSystem>();
         trail = GetComponent<TrailRenderer>();
-        anim = GetComponent<Animator>();
+        anim = sprite.GetComponent<Animator>();
         horizontalSpeedHash = Animator.StringToHash("HorizontalSpeed");
         verticalSpeedHash = Animator.StringToHash("VerticalSpeed");
         jumpHash = Animator.StringToHash("Jump");
@@ -138,7 +140,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Ground check
-        groundCastPosition = Vector2.Lerp(groundCastPosition, rb.position + Vector2.up * -0.4f, fixedTime * 20);
+        groundCastPosition = Vector2.Lerp(groundCastPosition, rb.position + Vector2.up * -0.4f, fixedTime * 18);
         groundCastPosition.y = Mathf.Min(groundCastPosition.y, rb.position.y - 0.4f);
         grounded = Physics2D.CircleCast(groundCastPosition, 0.4f, Vector2.zero, 0, groundMask.value);
 
