@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class GameManager : SecureSingleton<GameManager>
 {
@@ -16,8 +17,14 @@ public class GameManager : SecureSingleton<GameManager>
     [Tooltip("If the player falls below this y-value, their position will be reset to the last checkpoint (or the beginning of the level if the player has not reached a checkpoint)")]
     public float deathHeight = -50f;
 
+    [Tooltip("If checked the player has a limited amount of lives, decremented each time the player dies & resets to the last checkpoint. If the player runs out of lives a Game Over screen appears")]
+    public bool limitPlayerLives = false;
+    public int playerLives = 5;
+
     public Image splashImage;
     public Image gameOverImage;
+    public Image gameCompleteImage;
+    TextMeshProUGUI playerLivesText;
 
     bool paused = false;
     int mode = 0; // 0:splash, 1:play, 2:end
@@ -46,7 +53,7 @@ public class GameManager : SecureSingleton<GameManager>
             }
         }
 
-
+        playerLivesText = transform.Find("Canvas").transform.Find("LivesText").GetComponent<TextMeshProUGUI>();
 
         Time.fixedDeltaTime = 1 / 100f;
         gameOverImage.color = new Color(1, 1, 1, 0);
@@ -90,6 +97,14 @@ public class GameManager : SecureSingleton<GameManager>
 
                 if (!paused)
                 {
+                    //Player Lives
+                    if(playerLives <= 0)
+                    {
+                        GameOver();
+                    }
+                    playerLivesText.text = "Lives: " + playerLives;
+
+
                     // Player input
                     if (Input.GetButtonDown("Jump")) { playerController.Jump(); }
                     playerController.HorizontalInput(Input.GetAxisRaw("Horizontal"));
@@ -111,6 +126,7 @@ public class GameManager : SecureSingleton<GameManager>
         Time.timeScale = 0;
         Cursor.visible = true;
         onPause.Invoke();
+        playerLivesText.gameObject.SetActive(false);
     }
 
     void Unpause()
@@ -118,6 +134,7 @@ public class GameManager : SecureSingleton<GameManager>
         Time.timeScale = 1;
         Cursor.visible = false;
         onUnpause.Invoke();
+        playerLivesText.gameObject.SetActive(true);
     }
 
     void Clock1()
@@ -141,6 +158,7 @@ public class GameManager : SecureSingleton<GameManager>
     public static void ResetLevel()
     {
         This.playerController.ResetPosition();
+        This.playerLives--;
     }
 
     public static void SetCheckpoint(int index)
@@ -149,11 +167,27 @@ public class GameManager : SecureSingleton<GameManager>
         This.checkpointIndex = index;
     }
 
+    public static void AddLives(int lives)
+    {
+        This.playerLives += lives;
+    }
+
     public static void GameOver()
     {
         This.mode = 2;
-        This.Pause();
+        Time.timeScale = 0;
+        Cursor.visible = true;
+        This.playerLivesText.gameObject.SetActive(false);
         This.gameOverImage.gameObject.SetActive(true);
+    }
+
+    public static void GameComplete()
+    {
+        This.mode = 2;
+        Time.timeScale = 0;
+        Cursor.visible = true;
+        This.playerLivesText.gameObject.SetActive(false);
+        This.gameCompleteImage.gameObject.SetActive(true);
     }
 
     void OnValidate()

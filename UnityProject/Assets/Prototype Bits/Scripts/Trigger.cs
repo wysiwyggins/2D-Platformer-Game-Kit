@@ -17,11 +17,15 @@ public class Trigger : MonoBehaviour
     public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
     public enum Vignette { NONE, ON, RESET }
 
-    [Header("Trigger Type Setting (mutually exclusive)")]
-    [Tooltip("If toggled, resets the player's position when activated")]
+    [Header("Trigger Type Setting")]
+    [Tooltip("If toggled, resets the player's position when activated. If toggled along with other settings the death trigger will be de-toggled.")]
     public bool isDeathTrigger = false;
     [Tooltip("If toggled, sets the trigger to the player's last checkpoint when activated")]
     public bool isCheckpoint = false;
+    [Tooltip("If toggled, adds the number of livesToAdd to the player's current remaining lives. Can go over the originally set max")]
+    public bool addsLives = false;
+    [Tooltip("If 'Adds Lives' is toggled, will add this many lives to the player's current lives count")]
+    public int livesToAdd;
 
     [Header("Settings")]
     [Tooltip("Enable Single Use to deactivate trigger after one use.")]
@@ -119,16 +123,12 @@ public class Trigger : MonoBehaviour
             GetComponent<SpriteRenderer>().enabled = false;
         }
 
-        //ensures the trigger cannot be a checkpoint and a death trigger at the same time
-        if (isCheckpoint)
+        //ensures the trigger cannot be a checkpoint/life adding trigger and a death trigger at the same time
+        if (isCheckpoint || addsLives)
         {
             isDeathTrigger = false;
         }
 
-        if(isDeathTrigger)
-        {
-            isCheckpoint = false;
-        }
 
         wait = new WaitForSeconds(0.1f);
     }
@@ -167,6 +167,11 @@ public class Trigger : MonoBehaviour
             if (isCheckpoint) //updates player's last position if checkpoint is crossed
             {
                 GameManager.SetCheckpoint(triggerCheckpoints.IndexOf(this));
+            }
+
+            if(addsLives)
+            {
+                GameManager.AddLives(livesToAdd);
             }
 
             if(isDeathTrigger)
@@ -383,7 +388,7 @@ public class Trigger : MonoBehaviour
             // End Game
             if (endGame)
             {
-                GameManager.GameOver();
+                GameManager.GameComplete();
             }
 
             // Single Use
