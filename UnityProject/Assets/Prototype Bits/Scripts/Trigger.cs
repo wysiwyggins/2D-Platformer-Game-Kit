@@ -8,13 +8,24 @@ using UnityEditor;
 [RequireComponent(typeof(AudioSource), typeof(Collider2D))]
 public class Trigger : MonoBehaviour
 {
-    static List<Trigger> triggers = new List<Trigger>();
+    [HideInInspector]public static List<Trigger> triggers = new List<Trigger>();
+    [HideInInspector]public static List<Trigger> triggerCheckpoints = new List<Trigger>();
 
     public enum CameraZoom { NONE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM }
     public enum Exposure { NONE, BRIGHTEN, DARKEN, RESET }
     public enum HueShift { NONE, UP, DOWN, RESET }
     public enum Saturation { NONE, DESATURATE, SUPERSATURATE, GRAYSCALE, RESET }
     public enum Vignette { NONE, ON, RESET }
+
+    [Header("Trigger Type Setting")]
+    [Tooltip("If toggled, resets the player's position when activated. If toggled along with other settings the death trigger will be de-toggled.")]
+    public bool isDeathTrigger = false;
+    [Tooltip("If toggled, sets the trigger to the player's last checkpoint when activated")]
+    public bool isCheckpoint = false;
+    [Tooltip("If toggled, adds the number of livesToAdd to the player's current remaining lives. Can go over the originally set max")]
+    public bool addsLives = false;
+    [Tooltip("If 'Adds Lives' is toggled, will add this many lives to the player's current lives count")]
+    public int livesToAdd;
 
     [Header("Settings")]
     [Tooltip("Enable Single Use to deactivate trigger after one use.")]
@@ -31,10 +42,25 @@ public class Trigger : MonoBehaviour
     public Saturation saturation;
     public Vignette vignette;
 
-    [Header("Change Object Size")]
-    public List<ResizeObject> objectsToGrow;
-    public List<ResizeObject> objectsToShrink;
-    public List<ResizeObject> objectsToReset;
+    [Header("Transform Objects")]
+    [Tooltip("Setting this to 0 will immediately transform the object")]
+    public float transformDuration;
+    public List<TransformObject> objectsToMove;
+    [Tooltip("Objects in Objects to Move list will move to this position")]
+    public Vector3 moveOffset;
+
+    public List<TransformObject> objectsToRotate;
+    [Tooltip("Objects in Objects to Rotate list will rotate to this angle")]
+    public float rotateOffset;
+
+    public List<TransformObject> objectsToScale;
+    [Tooltip("Objects in Objects to Scale list will scale to this size")]
+    public float scaleOffset;
+
+    [Tooltip("Reset all transforms (Move, Rotate, Scale) back to their original position.")]
+    public List<TransformObject> objectsToReset;
+
+
 
     [Header("Change Object Color")]
     public Color newColor = new Color(0, 0, 0, 1);
@@ -86,10 +112,23 @@ public class Trigger : MonoBehaviour
             triggers.Add(this);
         }
 
+        // Register trigger as a checkpoint if set
+        if (isCheckpoint && !triggerCheckpoints.Contains(this))
+        {
+            triggerCheckpoints.Add(this);
+        }
+
         if (hideInGame)
         {
             GetComponent<SpriteRenderer>().enabled = false;
         }
+
+        //ensures the trigger cannot be a checkpoint/life adding trigger and a death trigger at the same time
+        if (isCheckpoint || addsLives)
+        {
+            isDeathTrigger = false;
+        }
+
 
         wait = new WaitForSeconds(0.1f);
     }
@@ -124,6 +163,23 @@ public class Trigger : MonoBehaviour
 
         if ((colliderObject.CompareTag("Player") && !ignorePlayer) || go)
         {
+
+            if (isCheckpoint) //updates player's last position if checkpoint is crossed
+            {
+                GameManager.SetCheckpoint(triggerCheckpoints.IndexOf(this));
+            }
+
+            if(addsLives)
+            {
+                GameManager.AddLives(livesToAdd);
+            }
+
+            if(isDeathTrigger)
+            {
+                GameManager.ResetLevel();
+            }
+
+
             // Camera Zoom
             switch (cameraZoom)
             {
@@ -213,21 +269,30 @@ public class Trigger : MonoBehaviour
                     break;
             }
 
-            // Grow Objects
-            for (var i = 0; i < objectsToGrow.Count; i++)
+            // Move objects
+            for (var i = 0; i < objectsToMove.Count; i++)
             {
-                if (objectsToGrow[i] != null)
+                if (objectsToMove[i] != null)
                 {
-                    objectsToGrow[i].Grow();
+                    objectsToMove[i].StartMove(objectsToMove[i].transform.position + moveOffset, transformDuration);
                 }
             }
 
-            // Shrink Objects
-            for (var i = 0; i < objectsToShrink.Count; i++)
+            // Rotate Objects
+            for (var i = 0; i < objectsToRotate.Count; i++)
             {
-                if (objectsToShrink[i] != null)
+                if (objectsToRotate[i] != null)
                 {
-                    objectsToShrink[i].Shrink();
+                    objectsToRotate[i].StartRotate(objectsToRotate[i].transform.rotation.eulerAngles.z + rotateOffset, transformDuration);
+                }
+            }
+
+            //Scale Objects
+            for (var i = 0; i < objectsToScale.Count; i++)
+            {
+                if (objectsToScale[i] != null)
+                {
+                    objectsToScale[i].StartScale(objectsToScale[i].transform.localScale * scaleOffset, transformDuration);
                 }
             }
 
@@ -236,7 +301,7 @@ public class Trigger : MonoBehaviour
             {
                 if (objectsToReset[i] != null)
                 {
-                    objectsToReset[i].ResetSize();
+                    objectsToReset[i].Reset(transformDuration);
                 }
             }
 
@@ -323,7 +388,7 @@ public class Trigger : MonoBehaviour
             // End Game
             if (endGame)
             {
-                GameManager.GameOver();
+                GameManager.GameComplete();
             }
 
             // Single Use
@@ -389,27 +454,29 @@ public class Trigger : MonoBehaviour
 
             Handles.Label(position + Vector3.up * transform.localScale.y / 2, info);
 
-            Gizmos.color = Color.white;
-            foreach (var o in objectsToGrow)
+            Gizmos.color = Color.green;
+            foreach (var o in objectsToMove)
             {
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Grow: " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Move: " + o.name);
+
+                    Gizmos.DrawWireCube(o.transform.position + moveOffset, Vector3.one);
                 }
             }
 
-            Gizmos.color = Color.gray;
-            foreach (var o in objectsToShrink)
+            Gizmos.color = Color.cyan;
+            foreach (var o in objectsToRotate)
             {
                 if (o != null)
                 {
                     Gizmos.DrawLine(o.transform.position, position);
-                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Shrink: " + o.name);
+                    Handles.Label(Vector3.Lerp(o.transform.position, position, 0.5f), "Rotate: " + o.name);
                 }
             }
 
-            Gizmos.color = Color.black;
+            Gizmos.color = Color.red;
             foreach (var o in objectsToReset)
             {
                 if (o != null)
@@ -419,7 +486,7 @@ public class Trigger : MonoBehaviour
                 }
             }
 
-            Gizmos.color = Color.green;
+            Gizmos.color = Color.white;
             foreach (var o in objectsToShow)
             {
                 if (o != null)
@@ -429,7 +496,7 @@ public class Trigger : MonoBehaviour
                 }
             }
 
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.magenta;
             foreach (var o in objectsToHide)
             {
                 if (o != null)
@@ -460,7 +527,7 @@ public class Trigger : MonoBehaviour
             }
 
 
-            Gizmos.color = Color.cyan;
+            Gizmos.color = Color.grey;
             foreach (var o in objectsToActivateTrigger)
             {
                 if (o != null)
